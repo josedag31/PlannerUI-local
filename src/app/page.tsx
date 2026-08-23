@@ -1,69 +1,106 @@
-import Image from "next/image";
+import { prisma } from "@/lib/prisma";
+import Card from "@/components/Card";
+import TaskList from "@/components/widgets/TaskList";
+import QuickAddTask from "@/components/widgets/QuickAddTask";
+import HabitTracker from "@/components/widgets/HabitTracker";
+import GoalList from "@/components/widgets/GoalList";
+import CountdownList from "@/components/widgets/CountdownList";
+import WeekView from "@/components/widgets/WeekView";
+import QuickAddHabit from "@/components/widgets/QuickAddHabit";
+import QuickAddGoal from "@/components/widgets/QuickAddGoal";
+import QuickAddEvent from "@/components/widgets/QuickAddEvent";
+import { getSettings } from "@/lib/settings";
 
-export default function Home() {
+export default async function DashboardPage() {
+  const settings = await getSettings();
+  const sectionColors = {
+    STUDY: settings.sections.STUDY.color,
+    ARUS: settings.sections.ARUS.color,
+    PERSONAL: settings.sections.PERSONAL.color,
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekAhead = new Date(today);
+  weekAhead.setDate(weekAhead.getDate() + 7);
+
+  const [pendingTasks, habits, goals, upcomingEvents, upcomingExams, weekTasks] = await Promise.all([
+    prisma.task.findMany({
+      where: { done: false },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+      take: 8,
+      include: { subject: true },
+    }),
+    prisma.habit.findMany({
+      where: { archived: false },
+      include: { logs: { orderBy: { date: "desc" }, take: 30 } },
+    }),
+    prisma.goal.findMany({ where: { archived: false }, orderBy: { createdAt: "desc" } }),
+    prisma.eventCountdown.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6 }),
+    prisma.exam.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6, include: { subject: true } }),
+    prisma.task.findMany({ where: { dueDate: { gte: today, lte: weekAhead } }, include: { subject: true } }),
+  ]);
+
+  const weekItems = [
+    ...weekTasks.filter((t: (typeof weekTasks)[number]) => t.dueDate).map((t: (typeof weekTasks)[number]) => ({
+      id: `task-${t.id}`,
+      title: t.title,
+      date: t.dueDate as Date,
+      color: sectionColors[t.section],
+    })),
+    ...upcomingExams.map((e: (typeof upcomingExams)[number]) => ({
+      id: `exam-${e.id}`,
+      title: `Examen ${e.subject.name}`,
+      date: e.date,
+      color: sectionColors.STUDY,
+    })),
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight">Buenas, hoy toca dar caña</h1>
+        <p className="text-sm text-muted mt-1">
+          {today.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        </p>
+      </header>
+
+      <Card title="Semana">
+        <WeekView items={weekItems} />
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card title="Tareas pendientes" className="lg:col-span-2">
+          <QuickAddTask section="PERSONAL" />
+          <TaskList tasks={pendingTasks} />
+        </Card>
+
+        <Card title="Próximos eventos">
+          <CountdownList
+            events={[
+              ...upcomingEvents,
+              ...upcomingExams.map((e: (typeof upcomingExams)[number]) => ({
+                id: `exam-${e.id}`,
+                title: `Examen ${e.subject.name}`,
+                date: e.date,
+                section: "STUDY",
+              })),
+            ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())}
+            sectionColors={sectionColors}
+          />
+          <QuickAddEvent section="PERSONAL" />
+        </Card>
+
+        <Card title="Hábitos">
+          <HabitTracker habits={habits} />
+          <QuickAddHabit section="PERSONAL" />
+        </Card>
+
+        <Card title="Objetivos del año" className="lg:col-span-2">
+          <GoalList goals={goals} />
+          <QuickAddGoal section="PERSONAL" />
+        </Card>
+      </div>
     </div>
   );
 }

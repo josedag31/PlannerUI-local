@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Section {
+  STUDY
+  ARUS
+  PERSONAL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  section     Section
+  priority    Priority  @default(MEDIUM)
+  dueDate     DateTime?
+  done        Boolean   @default(false)
+  doneAt      DateTime?
+  subjectId   String?
+  subject     Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Habit {
+  id            String     @id @default(cuid())
+  name          String
+  section       Section
+  targetPerWeek Int        @default(7)
+  color         String?    @default("#22c55e")
+  archived      Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  logs          HabitLog[]
+}
+
+model HabitLog {
+  id       String   @id @default(cuid())
+  habitId  String
+  habit    Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date     DateTime
+  done     Boolean  @default(true)
+
+  @@unique([habitId, date])
+}
+
+model Goal {
+  id         String    @id @default(cuid())
+  title      String
+  section    Section
+  progress   Int       @default(0)
+  targetDate DateTime?
+  archived   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  section   Section  @default(STUDY)
+  color     String?  @default("#3b82f6")
+  credits   Int?
+  createdAt DateTime @default(now())
+  exams     Exam[]
+  tasks     Task[]
+}
+
+model Exam {
+  id        String   @id @default(cuid())
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model EventCountdown {
+  id        String   @id @default(cuid())
+  title     String
+  section   Section
+  date      DateTime
+  createdAt DateTime @default(now())
+}
+
+model Note {
+  id            String   @id @default(cuid())
+  title         String
+  content       String
+  section       Section
+  linkedFile    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AppSettings {
+  id      Int    @id @default(1)
+  appName String @default("Centro de Mando")
+  tagline String @default("Tu base de operaciones para el curso")
+}
+
+model SectionConfig {
+  key   Section @id
+  label String
+  color String
+  icon  String
+}

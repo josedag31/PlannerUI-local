@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Locked In — Planner
 
-## Getting Started
+Planner personal open-source con estética oscura, pensado para llevar estudios,
+proyectos (tipo Formula Student) y vida personal en un solo sitio, con base de
+datos real (no una plantilla estática).
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS
+- SQLite vía Prisma 7 (adaptador `@prisma/adapter-better-sqlite3`)
+- Todo corre en local, sin servidor externo
+
+## Puesta en marcha
 
 ```bash
+npm install
+cp .env.example .env
+npx prisma migrate dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Dashboard** (`/`): vista semanal, tareas pendientes, hábitos con rachas,
+  objetivos del año y próximos eventos/exámenes, todo a la vez.
+- **Estudios** (`/estudios`): asignaturas, exámenes, tareas y notas.
+- **ARUS** (`/arus`): tareas de equipo, reuniones/eventos, objetivos técnicos y notas.
+- **Personal** (`/personal`): tareas, hábitos, objetivos y notas de vida personal.
 
-## Learn More
+Cada sección tiene su propia base de datos relacional (Prisma, ver
+`prisma/schema.prisma`): tareas, hábitos + registros diarios, objetivos con
+progreso, asignaturas + exámenes, eventos/countdowns y notas.
 
-To learn more about Next.js, take a look at the following resources:
+## Configuración
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copia `.env.example` a `.env` y ajusta:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `DATABASE_URL`: ruta del fichero SQLite local (por defecto `./dev.db`).
+- `WATCHED_FOLDERS`: rutas absolutas separadas por coma a carpetas locales que
+  quieras enlazar desde el planner (apuntes, repos, proyectos). Vacío por defecto.
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI`: para la
+  Fase 2 (integración con Google Calendar / Drive / Gmail), todavía no
+  implementada. Instrucciones de configuración cuando llegue esa fase.
 
-## Deploy on Vercel
+Nunca subas tu `.env` a git — solo `.env.example` (con las claves vacías) va
+al repositorio.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Adaptar a tu propio caso
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+El proyecto no asume ninguna ruta ni cuenta personal: las tres secciones
+(Estudios / ARUS / Personal) son un punto de partida pensado para un
+estudiante de ingeniería en un equipo de Formula Student, pero los nombres,
+colores y campos se pueden renombrar libremente en `prisma/schema.prisma` y
+`src/app/*` sin romper nada.
+
+## Roadmap
+
+- [x] Fase 1: planner completo con BBDD real (tareas, hábitos, objetivos,
+      asignaturas/exámenes, eventos, notas)
+- [ ] Fase 2: integración con Google Calendar, Drive y Gmail (OAuth)
+- [ ] Fase 3: indexador de carpetas locales (`WATCHED_FOLDERS`)
