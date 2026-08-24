@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { getAuthenticatedClient } from "@/lib/google";
+import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
 export type GoogleCalendarEvent = {
   id: string;
@@ -58,8 +59,11 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
   }
 }
 
-export async function getUpcomingCalendarEvents(maxResults = 8): Promise<GoogleCalendarEvent[]> {
-  const auth = await getAuthenticatedClient();
+export async function getUpcomingCalendarEvents(
+  maxResults = 8,
+  label: GoogleAccountLabel = "PERSONAL"
+): Promise<GoogleCalendarEvent[]> {
+  const auth = await getAuthenticatedClient(label);
   if (!auth) return [];
 
   try {
@@ -93,8 +97,11 @@ export type GoogleDriveFile = {
   iconLink: string | null;
 };
 
-export async function getRecentDriveFiles(maxResults = 8): Promise<GoogleDriveFile[]> {
-  const auth = await getAuthenticatedClient();
+export async function getRecentDriveFiles(
+  maxResults = 8,
+  label: GoogleAccountLabel = "PERSONAL"
+): Promise<GoogleDriveFile[]> {
+  const auth = await getAuthenticatedClient(label);
   if (!auth) return [];
 
   try {
@@ -118,8 +125,12 @@ export async function getRecentDriveFiles(maxResults = 8): Promise<GoogleDriveFi
   }
 }
 
-export async function searchDriveFiles(query: string, maxResults = 10): Promise<GoogleDriveFile[]> {
-  const auth = await getAuthenticatedClient();
+export async function searchDriveFiles(
+  query: string,
+  maxResults = 10,
+  label: GoogleAccountLabel = "PERSONAL"
+): Promise<GoogleDriveFile[]> {
+  const auth = await getAuthenticatedClient(label);
   if (!auth || !query.trim()) return [];
 
   try {

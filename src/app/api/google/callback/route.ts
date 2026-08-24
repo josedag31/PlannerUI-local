@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { getOAuthClient } from "@/lib/google";
 import { prisma } from "@/lib/prisma";
+import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const error = request.nextUrl.searchParams.get("error");
+  const label: GoogleAccountLabel = request.nextUrl.searchParams.get("state") === "ARUS" ? "ARUS" : "PERSONAL";
 
   if (error) {
     return NextResponse.redirect(new URL(`/ajustes?google_error=${error}`, request.url));
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest) {
   const { data: userInfo } = await oauth2.userinfo.get();
 
   await prisma.googleAccount.upsert({
-    where: { id: 1 },
+    where: { label },
     update: {
       email: userInfo.email ?? null,
       accessToken: tokens.access_token,
@@ -39,7 +41,7 @@ export async function GET(request: NextRequest) {
       scope: tokens.scope ?? "",
     },
     create: {
-      id: 1,
+      label,
       email: userInfo.email ?? null,
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
@@ -48,5 +50,5 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return NextResponse.redirect(new URL("/ajustes?google_connected=1", request.url));
+  return NextResponse.redirect(new URL(`/ajustes?google_connected=${label}`, request.url));
 }

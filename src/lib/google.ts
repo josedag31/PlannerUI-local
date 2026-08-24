@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar",
@@ -9,6 +10,11 @@ export const GOOGLE_SCOPES = [
 ];
 
 export const DEFAULT_REDIRECT_URI = "http://localhost:3000/api/google/callback";
+
+export const GOOGLE_ACCOUNT_LABELS: { value: GoogleAccountLabel; name: string }[] = [
+  { value: "PERSONAL", name: "Personal" },
+  { value: "ARUS", name: "ARUS" },
+];
 
 export async function getGoogleOAuthConfig() {
   return prisma.googleOAuthConfig.findUnique({ where: { id: 1 } });
@@ -25,18 +31,22 @@ export async function getOAuthClient() {
   return new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
 }
 
-export async function isGoogleConnected() {
-  const account = await prisma.googleAccount.findUnique({ where: { id: 1 } });
+export async function isGoogleConnected(label: GoogleAccountLabel = "PERSONAL") {
+  const account = await prisma.googleAccount.findUnique({ where: { label } });
   return Boolean(account);
 }
 
-export async function disconnectGoogle() {
-  await prisma.googleAccount.deleteMany({});
+export async function getConnectedGoogleAccounts() {
+  return prisma.googleAccount.findMany();
 }
 
-/** Returns an OAuth2 client authenticated with the stored account, refreshing the access token if needed. */
-export async function getAuthenticatedClient() {
-  const account = await prisma.googleAccount.findUnique({ where: { id: 1 } });
+export async function disconnectGoogle(label: GoogleAccountLabel) {
+  await prisma.googleAccount.deleteMany({ where: { label } });
+}
+
+/** Returns an OAuth2 client authenticated with the given account slot, refreshing the access token if needed. */
+export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSONAL") {
+  const account = await prisma.googleAccount.findUnique({ where: { label } });
   if (!account) return null;
 
   const client = await getOAuthClient();
@@ -51,7 +61,7 @@ export async function getAuthenticatedClient() {
 
   client.on("tokens", async (tokens) => {
     await prisma.googleAccount.update({
-      where: { id: 1 },
+      where: { label },
       data: {
         accessToken: tokens.access_token ?? account.accessToken,
         expiryDate: BigInt(tokens.expiry_date ?? Number(account.expiryDate)),

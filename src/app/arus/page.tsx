@@ -7,7 +7,10 @@ import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import CountdownList from "@/components/widgets/CountdownList";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
 import NotesBoard from "@/components/widgets/NotesBoard";
+import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
 import { getSettings } from "@/lib/settings";
+import { isGoogleConnected } from "@/lib/google";
+import { getRecentDriveFiles } from "@/lib/googleData";
 
 export default async function ArusPage() {
   const settings = await getSettings();
@@ -15,7 +18,9 @@ export default async function ArusPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [tasks, goals, events, notes] = await Promise.all([
+  const arusGoogleConnected = await isGoogleConnected("ARUS");
+
+  const [tasks, goals, events, notes, driveFiles] = await Promise.all([
     prisma.task.findMany({
       where: { section: "ARUS", done: false },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -23,6 +28,7 @@ export default async function ArusPage() {
     prisma.goal.findMany({ where: { section: "ARUS", archived: false }, orderBy: { createdAt: "desc" } }),
     prisma.eventCountdown.findMany({ where: { section: "ARUS", date: { gte: today } }, orderBy: { date: "asc" } }),
     prisma.note.findMany({ where: { section: "ARUS" }, orderBy: { updatedAt: "desc" } }),
+    arusGoogleConnected ? getRecentDriveFiles(10, "ARUS") : Promise.resolve([]),
   ]);
 
   return (
@@ -51,6 +57,20 @@ export default async function ArusPage() {
         <Card title="Notas técnicas" className="lg:col-span-3">
           <NotesBoard notes={notes} section="ARUS" />
         </Card>
+
+        {arusGoogleConnected ? (
+          <Card title="Google Drive (ARUS)" className="lg:col-span-3">
+            <GoogleDriveWidget files={driveFiles} />
+          </Card>
+        ) : (
+          <p className="text-xs text-muted lg:col-span-3">
+            Conecta la cuenta de Google de ARUS en{" "}
+            <a href="/ajustes" className="text-accent hover:brightness-110">
+              Ajustes
+            </a>{" "}
+            para ver aquí los archivos de Drive del equipo.
+          </p>
+        )}
       </div>
     </div>
   );
