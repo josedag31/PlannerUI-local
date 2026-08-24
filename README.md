@@ -109,6 +109,16 @@ tarjeta (borra el token guardado localmente, no revoca el acceso en tu cuenta
 de Google — para eso, revócalo desde
 [myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
 
+### Problema conocido: `unable to verify the first certificate`
+
+Si al conectar te sale este error en la consola del servidor, tu antivirus
+(Avast, Bitdefender, Kaspersky...) está interceptando el tráfico HTTPS para
+inspeccionarlo y lo firma con su propio certificado, que Node.js no reconoce
+por defecto. Ya está arreglado en los scripts `dev`/`start` (`NODE_OPTIONS=--use-system-ca`,
+para que Node confíe en el almacén de certificados de Windows en vez de solo
+en el suyo propio) — si aun así te pasa, revisa que tu antivirus no tenga una
+excepción específica que lo bloquee igualmente.
+
 ## Adaptar a tu propio caso
 
 El proyecto no asume ninguna ruta ni cuenta personal: las tres secciones
