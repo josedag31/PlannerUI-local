@@ -20,7 +20,8 @@ import GmailWidget from "@/components/widgets/GmailWidget";
 import { isMicrosoftConnected } from "@/lib/microsoft";
 import { getOutlookMailSummary } from "@/lib/microsoftData";
 import OutlookWidget from "@/components/widgets/OutlookWidget";
-import { getDashboardLayout, WIDGET_TITLES, type WidgetKey } from "@/lib/dashboardLayout";
+import { getDashboardLayout } from "@/lib/dashboardLayout";
+import { WIDGET_TITLES, type WidgetKey } from "@/lib/dashboardWidgets";
 import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
 export default async function DashboardPage() {

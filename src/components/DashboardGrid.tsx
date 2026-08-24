@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { updateDashboardLayout } from "@/lib/actions";
-import type { WidgetKey, WidgetLayoutItem } from "@/lib/dashboardLayout";
+import { WIDGET_SPANS, type WidgetKey, type WidgetLayoutItem } from "@/lib/dashboardWidgets";
 
 export default function DashboardGrid({
   layout,
@@ -93,11 +93,11 @@ export default function DashboardGrid({
             onDrop={() => {
               if (editMode) handleDrop(items.findIndex((i) => i.key === item.key));
             }}
-            className={
+            className={`${WIDGET_SPANS[item.key]} ${
               editMode
                 ? "cursor-move rounded-2xl ring-1 ring-accent/40 ring-offset-2 ring-offset-background transition-shadow"
-                : undefined
-            }
+                : ""
+            }`}
           >
             {widgets[item.key]}
           </div>

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { Priority, Section, GoogleAccountLabel } from "@/generated/prisma/client";
-import type { WidgetLayoutItem } from "@/lib/dashboardLayout";
+import type { WidgetLayoutItem } from "@/lib/dashboardWidgets";
 import { isGoogleConnected } from "@/lib/google";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/googleData";
 import { isMicrosoftConnected } from "@/lib/microsoft";
