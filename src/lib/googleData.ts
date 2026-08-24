@@ -40,7 +40,8 @@ export async function createCalendarEvent(input: {
     });
 
     return data.id ?? null;
-  } catch {
+  } catch (err) {
+    console.error("[google] createCalendarEvent failed:", err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -52,8 +53,8 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
   try {
     const calendar = google.calendar({ version: "v3", auth });
     await calendar.events.delete({ calendarId: "primary", eventId });
-  } catch {
-    // best-effort: ignore (event may already be gone)
+  } catch (err) {
+    console.error("[google] deleteCalendarEvent failed:", err instanceof Error ? err.message : err);
   }
 }
 
@@ -78,7 +79,8 @@ export async function getUpcomingCalendarEvents(maxResults = 8): Promise<GoogleC
         title: event.summary ?? "(sin título)",
         date: new Date(event.start!.dateTime ?? event.start!.date!),
       }));
-  } catch {
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
     return [];
   }
 }
@@ -110,7 +112,8 @@ export async function getRecentDriveFiles(maxResults = 8): Promise<GoogleDriveFi
       modifiedTime: f.modifiedTime ?? null,
       iconLink: f.iconLink ?? null,
     }));
-  } catch {
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
     return [];
   }
 }
@@ -134,7 +137,8 @@ export async function searchDriveFiles(query: string, maxResults = 10): Promise<
       modifiedTime: f.modifiedTime ?? null,
       iconLink: f.iconLink ?? null,
     }));
-  } catch {
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
     return [];
   }
 }
@@ -176,7 +180,8 @@ export async function getGmailSummary(): Promise<GmailSummary | null> {
       unreadCount: list.data.resultSizeEstimate ?? messages.length,
       latest,
     };
-  } catch {
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
     return null;
   }
 }

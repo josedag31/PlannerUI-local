@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const settings = await getSettings();
   const googleConnected = await isGoogleConnected();
   const [googleEvents, driveFiles, gmailSummary] = googleConnected
-    ? await Promise.all([getUpcomingCalendarEvents(), getRecentDriveFiles(), getGmailSummary()])
+    ? await Promise.all([getUpcomingCalendarEvents(20), getRecentDriveFiles(), getGmailSummary()])
     : [[], [], null];
   const sectionColors = {
     STUDY: settings.sections.STUDY.color,
@@ -62,6 +62,12 @@ export default async function DashboardPage() {
       title: `Examen ${e.subject.name}`,
       date: e.date,
       color: sectionColors.STUDY,
+    })),
+    ...googleEvents.map((e) => ({
+      id: `google-${e.id}`,
+      title: e.title,
+      date: e.date,
+      color: "#4285F4",
     })),
   ];
 
@@ -113,7 +119,7 @@ export default async function DashboardPage() {
         {googleConnected && (
           <>
             <Card title="Google Calendar">
-              <GoogleCalendarWidget events={googleEvents} />
+              <GoogleCalendarWidget events={googleEvents.slice(0, 8)} />
             </Card>
 
             <Card title="Google Drive">
