@@ -56,11 +56,15 @@ al repositorio.
 Cada sección sincroniza con un calendario distinto, pensado para gente que
 reparte su identidad entre varias cuentas (personal, equipo, universidad):
 
-| Sección  | Calendario destino                          |
-| -------- | -------------------------------------------- |
-| Estudios | Outlook (Microsoft) — ver más abajo           |
-| ARUS     | Google, cuenta **ARUS**                       |
-| Personal | Google, cuenta **Personal**                   |
+| Sección  | Calendario destino                                            |
+| -------- | -------------------------------------------------------------- |
+| Estudios | Outlook si está conectado; si no, Google, cuenta **Personal**   |
+| ARUS     | Google, cuenta **ARUS**                                         |
+| Personal | Google, cuenta **Personal**                                     |
+
+Outlook para Estudios es opcional y da igual el orden en que conectes las
+cosas: en cuanto conectes Microsoft, Estudios empieza a usarlo sin tocar
+nada más; mientras tanto, usa el Google Personal como el resto.
 
 Al crear una tarea, examen o evento con fecha en cualquier sección, se crea
 también un evento en el calendario que le corresponda (si esa cuenta está
