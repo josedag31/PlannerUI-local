@@ -15,6 +15,9 @@ import { getUpcomingCalendarEvents, getRecentDriveFiles, getGmailSummary } from 
 import GoogleCalendarWidget from "@/components/widgets/GoogleCalendarWidget";
 import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
 import GmailWidget from "@/components/widgets/GmailWidget";
+import { isMicrosoftConnected } from "@/lib/microsoft";
+import { getOutlookMailSummary } from "@/lib/microsoftData";
+import OutlookWidget from "@/components/widgets/OutlookWidget";
 
 export default async function DashboardPage() {
   const settings = await getSettings();
@@ -22,6 +25,9 @@ export default async function DashboardPage() {
   const [googleEvents, driveFiles, gmailSummary] = googleConnected
     ? await Promise.all([getUpcomingCalendarEvents(20), getRecentDriveFiles(), getGmailSummary()])
     : [[], [], null];
+
+  const outlookConnected = await isMicrosoftConnected();
+  const outlookSummary = outlookConnected ? await getOutlookMailSummary() : null;
   const sectionColors = {
     STUDY: settings.sections.STUDY.color,
     ARUS: settings.sections.ARUS.color,
@@ -140,15 +146,21 @@ export default async function DashboardPage() {
             </Card>
           </>
         )}
+
+        {outlookConnected && (
+          <Card title="Outlook">
+            <OutlookWidget summary={outlookSummary} />
+          </Card>
+        )}
       </div>
 
-      {!googleConnected && (
+      {(!googleConnected || !outlookConnected) && (
         <p className="text-xs text-muted">
-          Conecta tu cuenta de Google en{" "}
+          Conecta tus cuentas en{" "}
           <a href="/ajustes" className="text-accent hover:brightness-110">
             Ajustes
           </a>{" "}
-          para ver aquí tu Calendar, Drive y Gmail.
+          para ver aquí tu Calendar, Drive, Gmail y Outlook.
         </p>
       )}
     </div>

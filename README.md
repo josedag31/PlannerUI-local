@@ -102,11 +102,17 @@ botón "Conectar Google" aparece al momento.
 
 ### 5. Conectar tu cuenta
 
-Pulsa **Conectar Google**. Te llevará al consentimiento de Google y, al
-aceptar, volverás al planner con Calendar, Drive y Gmail ya visibles en el
-dashboard. Puedes desconectar la cuenta en cualquier momento desde la misma
-tarjeta (borra el token guardado localmente, no revoca el acceso en tu cuenta
-de Google — para eso, revócalo desde
+En `/ajustes` verás dos filas, **Personal** y **ARUS**: pulsa **Conectar** en
+la que quieras. Te llevará al consentimiento de Google y, al aceptar,
+volverás al planner con esa cuenta conectada. La cuenta **Personal**
+alimenta el dashboard (Calendar, Drive, Gmail) y es a donde se sincronizan
+tus tareas/exámenes/eventos; la cuenta **ARUS** solo alimenta el widget de
+Drive en la página ARUS (útil si usas una cuenta de Google distinta para el
+equipo). Las dos comparten las mismas credenciales — si quieres conectar
+ARUS con una cuenta distinta a la Personal, añádela también como usuario de
+prueba en el paso 2. Puedes desconectar cada una por separado (borra el
+token guardado localmente, no revoca el acceso en tu cuenta de Google — para
+eso, revócalo desde
 [myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
 
 ### Problema conocido: `unable to verify the first certificate`
@@ -118,6 +124,54 @@ por defecto. Ya está arreglado en los scripts `dev`/`start` (`NODE_OPTIONS=--us
 para que Node confíe en el almacén de certificados de Windows en vez de solo
 en el suyo propio) — si aun así te pasa, revisa que tu antivirus no tenga una
 excepción específica que lo bloquee igualmente.
+
+## Outlook: conectar tu correo de Microsoft (universidad, trabajo...)
+
+El widget "Outlook" del dashboard lee tu bandeja de entrada (correos sin leer)
+de una cuenta de Microsoft — pensado para correos institucionales tipo
+`@alumnos.tuuniversidad.es` que usan Microsoft 365, pero funciona con
+cualquier cuenta Microsoft (personal u organizativa).
+
+### 1. Registrar la app en Azure
+
+1. Ve a [portal.azure.com](https://portal.azure.com/) → busca **Microsoft
+   Entra ID** → **Registros de aplicaciones** → **Nuevo registro**.
+2. Nombre: el que quieras (ej. "Planner").
+3. **Tipos de cuenta admitidos**: elige *"Cuentas en cualquier directorio
+   organizativo y cuentas personales Microsoft"* — así funciona tanto con tu
+   cuenta personal como con la de la universidad, sin depender de un tenant
+   concreto.
+4. **URI de redirección**: tipo **Web**, valor exacto:
+   ```
+   http://localhost:3000/api/microsoft/callback
+   ```
+5. Registrar. Copia el **Application (client) ID** que aparece en la página
+   de resumen.
+
+### 2. Crear el secreto de cliente
+
+1. En el menú de la app registrada: **Certificados y secretos → Client
+   secrets → New client secret**.
+2. Ponle una descripción y una caducidad (24 meses es razonable).
+3. Copia el **Value** (el valor, no el "Secret ID") en cuanto se genere —
+   Azure solo lo muestra una vez.
+
+### 3. Dar permisos de lectura de correo
+
+1. **API permissions → Add a permission → Microsoft Graph → Delegated
+   permissions**.
+2. Añade `Mail.Read`, `User.Read` y `offline_access` (los dos primeros
+   suelen estar ya por defecto).
+3. No hace falta "Grant admin consent" para uso personal — el propio Google
+   (perdón, Microsoft) te pedirá el consentimiento la primera vez que
+   conectes, como usuario normal.
+
+### 4. Guardar las credenciales y conectar
+
+En `/ajustes` → tarjeta "Conexión con Microsoft (Outlook)" → abre
+"Credenciales de Microsoft" → pega el Application (client) ID y el Client
+secret (Value). Deja el Tenant ID en `common` salvo que sepas que tu
+universidad exige uno específico. Guarda, y pulsa **Conectar**.
 
 ## Adaptar a tu propio caso
 
@@ -132,7 +186,9 @@ colores y campos se pueden renombrar libremente en `prisma/schema.prisma` y
 - [x] Fase 1: planner completo con BBDD real (tareas, hábitos, objetivos,
       asignaturas/exámenes, eventos, notas)
 - [x] Fase 2: integración con Google Calendar (lectura + creación), Drive y
-      Gmail (lectura); credenciales gestionadas desde `/ajustes`
+      Gmail (lectura); credenciales gestionadas desde `/ajustes`;
+      soporta 2 cuentas de Google (Personal + ARUS)
+- [x] Fase 2.5: Outlook (correo, vía Microsoft Graph)
 - [ ] Fase 3: indexador de carpetas locales (`WATCHED_FOLDERS`)
 - [ ] Fase 4: empaquetar como app de escritorio (`.exe`), ver más abajo
 

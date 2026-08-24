@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateAppSettings, updateSectionConfig, updateGoogleOAuthConfig } from "@/lib/actions";
+import { updateAppSettings, updateSectionConfig, updateGoogleOAuthConfig, updateMicrosoftOAuthConfig } from "@/lib/actions";
 
 export function AppSettingsForm({ appName, tagline }: { appName: string; tagline: string }) {
   const [saved, setSaved] = useState(false);
@@ -149,6 +149,77 @@ export function GoogleOAuthConfigForm({
       </div>
       <div>
         <label className="block text-xs text-muted mb-1">Redirect URI (regístrala igual en Google Cloud)</label>
+        <input
+          name="redirectUri"
+          defaultValue={redirectUri}
+          required
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+      </div>
+      <button
+        type="submit"
+        className="bg-accent text-background text-sm font-semibold rounded-lg px-4 py-2 hover:brightness-110"
+      >
+        {saved ? "Guardado ✓" : "Guardar credenciales"}
+      </button>
+    </form>
+  );
+}
+
+export function MicrosoftOAuthConfigForm({
+  clientId,
+  tenantId,
+  redirectUri,
+}: {
+  clientId: string;
+  tenantId: string;
+  redirectUri: string;
+}) {
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <form
+      action={async (formData) => {
+        await updateMicrosoftOAuthConfig(formData);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }}
+      className="space-y-3"
+    >
+      <div>
+        <label className="block text-xs text-muted mb-1">Application (client) ID</label>
+        <input
+          name="clientId"
+          defaultValue={clientId}
+          required
+          placeholder="00000000-0000-0000-0000-000000000000"
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">Client secret (Value, no el Secret ID)</label>
+        <input
+          name="clientSecret"
+          type="password"
+          required
+          placeholder="valor del secreto"
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+        <p className="text-[11px] text-muted mt-1">
+          No se muestra por seguridad una vez guardado: si vuelves a guardar, tienes que pegarlo de nuevo.
+        </p>
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">Tenant ID (deja &quot;common&quot; salvo que sepas que necesitas otro)</label>
+        <input
+          name="tenantId"
+          defaultValue={tenantId}
+          required
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">Redirect URI (regístrala igual en Azure)</label>
         <input
           name="redirectUri"
           defaultValue={redirectUri}

@@ -266,3 +266,18 @@ export async function updateGoogleOAuthConfig(formData: FormData) {
   });
   revalidatePath("/ajustes");
 }
+
+export async function updateMicrosoftOAuthConfig(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "").trim();
+  const clientSecret = String(formData.get("clientSecret") ?? "").trim();
+  const tenantId = String(formData.get("tenantId") ?? "").trim();
+  const redirectUri = String(formData.get("redirectUri") ?? "").trim();
+  if (!clientId || !clientSecret || !tenantId || !redirectUri) return;
+
+  await prisma.microsoftOAuthConfig.upsert({
+    where: { id: 1 },
+    update: { clientId, clientSecret, tenantId, redirectUri },
+    create: { id: 1, clientId, clientSecret, tenantId, redirectUri },
+  });
+  revalidatePath("/ajustes");
+}

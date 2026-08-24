@@ -1,6 +1,11 @@
 import Card from "@/components/Card";
 import { getSettings, SECTION_KEYS } from "@/lib/settings";
-import { AppSettingsForm, SectionConfigForm, GoogleOAuthConfigForm } from "@/components/widgets/SettingsForms";
+import {
+  AppSettingsForm,
+  SectionConfigForm,
+  GoogleOAuthConfigForm,
+  MicrosoftOAuthConfigForm,
+} from "@/components/widgets/SettingsForms";
 import {
   isGoogleConfigured,
   getGoogleOAuthConfig,
@@ -8,6 +13,14 @@ import {
   DEFAULT_REDIRECT_URI,
   GOOGLE_ACCOUNT_LABELS,
 } from "@/lib/google";
+import {
+  isMicrosoftConfigured,
+  isMicrosoftConnected,
+  getMicrosoftOAuthConfig,
+  DEFAULT_MICROSOFT_REDIRECT_URI,
+  DEFAULT_MICROSOFT_TENANT,
+} from "@/lib/microsoft";
+import { prisma } from "@/lib/prisma";
 import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
 function GoogleAccountBlock({
@@ -65,13 +78,25 @@ function GoogleAccountBlock({
 export default async function AjustesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ google_connected?: string; google_disconnected?: string; google_error?: string }>;
+  searchParams: Promise<{
+    google_connected?: string;
+    google_disconnected?: string;
+    google_error?: string;
+    microsoft_connected?: string;
+    microsoft_disconnected?: string;
+    microsoft_error?: string;
+  }>;
 }) {
   const settings = await getSettings();
   const params = await searchParams;
   const configured = await isGoogleConfigured();
   const accounts = await getConnectedGoogleAccounts();
   const oauthConfig = await getGoogleOAuthConfig();
+
+  const msConfigured = await isMicrosoftConfigured();
+  const msConnected = await isMicrosoftConnected();
+  const msAccount = msConnected ? await prisma.microsoftAccount.findUnique({ where: { id: 1 } }) : null;
+  const msOauthConfig = await getMicrosoftOAuthConfig();
 
   return (
     <div className="space-y-6">
@@ -150,6 +175,73 @@ export default async function AjustesPage({
               <GoogleOAuthConfigForm
                 clientId={oauthConfig?.clientId ?? ""}
                 redirectUri={oauthConfig?.redirectUri ?? DEFAULT_REDIRECT_URI}
+              />
+            </div>
+          </details>
+        </Card>
+
+        <Card title="Conexión con Microsoft (Outlook)" className="lg:col-span-2">
+          {params.microsoft_connected && (
+            <p className="text-xs text-accent mb-3">Cuenta de Microsoft conectada correctamente.</p>
+          )}
+          {params.microsoft_disconnected && (
+            <p className="text-xs text-muted mb-3">Cuenta de Microsoft desconectada.</p>
+          )}
+          {params.microsoft_error && (
+            <p className="text-xs text-danger mb-3">Error al conectar con Microsoft: {params.microsoft_error}</p>
+          )}
+
+          {!msConfigured && (
+            <p className="text-sm text-muted mb-4">
+              Introduce las credenciales de tu app de Azure para poder conectar tu cuenta de Outlook (por ejemplo,
+              tu correo de la universidad). Consulta el README (sección &quot;Outlook&quot;) para los pasos exactos.
+            </p>
+          )}
+
+          <div className="flex items-center justify-between gap-4 bg-surface-2 border border-border rounded-lg p-3 mb-6">
+            <div className="text-sm">
+              <span className="font-medium">Outlook</span>
+              {msConnected ? (
+                <div className="text-xs text-accent mt-0.5">
+                  ● Conectado{msAccount?.email ? ` como ${msAccount.email}` : ""}
+                </div>
+              ) : (
+                <div className="text-xs text-muted mt-0.5">Sin conectar</div>
+              )}
+            </div>
+            {msConnected ? (
+              <form action="/api/microsoft/disconnect" method="POST">
+                <button
+                  type="submit"
+                  className="text-xs font-semibold text-danger hover:brightness-110 border border-border rounded-lg px-3 py-2 shrink-0"
+                >
+                  Desconectar
+                </button>
+              </form>
+            ) : (
+              <a
+                href="/api/microsoft/connect"
+                aria-disabled={!msConfigured}
+                className={`text-xs font-semibold rounded-lg px-3 py-2 shrink-0 ${
+                  msConfigured
+                    ? "bg-accent text-background hover:brightness-110"
+                    : "bg-surface text-muted pointer-events-none"
+                }`}
+              >
+                Conectar
+              </a>
+            )}
+          </div>
+
+          <details className="text-sm" open={!msConfigured}>
+            <summary className="cursor-pointer text-muted hover:text-foreground select-none">
+              {msConfigured ? "Editar credenciales de Microsoft" : "Credenciales de Microsoft"}
+            </summary>
+            <div className="mt-3">
+              <MicrosoftOAuthConfigForm
+                clientId={msOauthConfig?.clientId ?? ""}
+                tenantId={msOauthConfig?.tenantId ?? DEFAULT_MICROSOFT_TENANT}
+                redirectUri={msOauthConfig?.redirectUri ?? DEFAULT_MICROSOFT_REDIRECT_URI}
               />
             </div>
           </details>
