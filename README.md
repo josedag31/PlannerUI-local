@@ -121,5 +121,28 @@ colores y campos se pueden renombrar libremente en `prisma/schema.prisma` y
 
 - [x] Fase 1: planner completo con BBDD real (tareas, hábitos, objetivos,
       asignaturas/exámenes, eventos, notas)
-- [x] Fase 2: integración con Google Calendar, Drive y Gmail (OAuth, solo lectura)
+- [x] Fase 2: integración con Google Calendar (lectura + creación), Drive y
+      Gmail (lectura); credenciales gestionadas desde `/ajustes`
 - [ ] Fase 3: indexador de carpetas locales (`WATCHED_FOLDERS`)
+- [ ] Fase 4: empaquetar como app de escritorio (`.exe`), ver más abajo
+
+## Fase 4 (futuro): empaquetar como app de escritorio
+
+La idea es dejar de tener que abrir una terminal y `localhost:3000` a mano
+cada vez, y tener un icono que se abre como cualquier otro programa. Dos
+caminos posibles, ninguno implementado todavía:
+
+- **Tauri** (recomendado): empaqueta esta misma app Next.js dentro de una
+  ventana nativa ligera (usa el motor de renderizado de Windows en vez de
+  cargar un Chromium entero, así que el `.exe` pesa mucho menos que con
+  Electron — decenas de MB en vez de cientos).
+- **Electron**: alternativa más conocida y con más documentación, pero cada
+  `.exe` pesa bastante más porque empaqueta su propio Chromium completo.
+
+En ambos casos el trabajo real es: arrancar el servidor Next.js internamente
+al abrir el programa (el usuario nunca ve una terminal ni un puerto), y que
+la base de datos SQLite se guarde en una carpeta de datos de usuario normal
+de Windows en vez de dentro de la carpeta del proyecto. El motivo de haber
+sacado las credenciales de Google del `.env` a la base de datos (Fase 2) es
+precisamente para que este paso no tenga que inventarse nada nuevo: la
+configuración entera ya vive en un único fichero (`dev.db`) fácil de mover.
