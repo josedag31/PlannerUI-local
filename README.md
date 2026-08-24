@@ -211,25 +211,66 @@ colores y campos se pueden renombrar libremente en `prisma/schema.prisma` y
       soporta 2 cuentas de Google (Personal + ARUS)
 - [x] Fase 2.5: Outlook (correo, vía Microsoft Graph)
 - [ ] Fase 3: indexador de carpetas locales (`WATCHED_FOLDERS`)
-- [ ] Fase 4: empaquetar como app de escritorio (`.exe`), ver más abajo
+- [x] Fase 4: empaquetar como app de escritorio (`.exe`), ver más abajo
 
-## Fase 4 (futuro): empaquetar como app de escritorio
+## Fase 4: app de escritorio (Windows)
 
-La idea es dejar de tener que abrir una terminal y `localhost:3000` a mano
-cada vez, y tener un icono que se abre como cualquier otro programa. Dos
-caminos posibles, ninguno implementado todavía:
+Empaquetado con **Tauri**: una ventana nativa (WebView2, el motor de Edge) que
+arranca el servidor Next.js internamente como proceso hijo oculto — nunca se
+ve una terminal ni un puerto. La base de datos SQLite se guarda en
+`%APPDATA%\app.lockedinplanner.desktop\dev.db`, fuera de la carpeta de
+instalación. Al cerrar la ventana, el servidor interno se para con ella (no
+quedan procesos huérfanos).
 
-- **Tauri** (recomendado): empaqueta esta misma app Next.js dentro de una
-  ventana nativa ligera (usa el motor de renderizado de Windows en vez de
-  cargar un Chromium entero, así que el `.exe` pesa mucho menos que con
-  Electron — decenas de MB en vez de cientos).
-- **Electron**: alternativa más conocida y con más documentación, pero cada
-  `.exe` pesa bastante más porque empaqueta su propio Chromium completo.
+### Descargar
 
-En ambos casos el trabajo real es: arrancar el servidor Next.js internamente
-al abrir el programa (el usuario nunca ve una terminal ni un puerto), y que
-la base de datos SQLite se guarde en una carpeta de datos de usuario normal
-de Windows en vez de dentro de la carpeta del proyecto. El motivo de haber
-sacado las credenciales de Google del `.env` a la base de datos (Fase 2) es
-precisamente para que este paso no tenga que inventarse nada nuevo: la
-configuración entera ya vive en un único fichero (`dev.db`) fácil de mover.
+Última release en [GitHub Releases](https://github.com/josedag31/PlannerUI-local/releases):
+descarga el `.exe` instalador (NSIS), ejecútalo y abre "Locked In Planner"
+desde el menú inicio. El primer arranque crea una base de datos nueva y
+vacía — conecta tus cuentas de Google/Microsoft desde `/ajustes` igual que en
+local.
+
+### Compilar tu propio `.exe`
+
+```bash
+npm run desktop:build
+```
+
+Esto: hace `next build` (con `output: "standalone"`), copia ese build más
+`node.exe` (se descarga la primera vez) y una base de datos plantilla
+(migraciones aplicadas, sin datos) a `src-tauri/resources/`, y llama a
+`tauri build`. El instalador queda en
+`src-tauri/target/release/bundle/nsis/`.
+
+Requiere, además de Node: [Rust](https://rustup.rs/) y las
+[Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+(workload "Desarrollo para el escritorio con C++") para compilar la parte
+nativa de Tauri.
+
+**Windows Smart App Control**: si está activado, bloquea sin excepciones la
+ejecución de binarios nuevos sin firmar — tanto en build (los build scripts
+de `cargo`) como al abrir el `.exe` final la primera vez. Si te lo
+encuentras: Configuración → Privacidad y seguridad → Seguridad de Windows →
+Control de aplicaciones y del explorador → Smart App Control → Desactivado.
+En builds recientes de Windows 11 (24H2/25H2) se puede volver a activar
+después sin reinstalar Windows.
+
+### Notas técnicas
+
+- `src-tauri/resources/` (build de Next, `node.exe`, DB plantilla) y
+  `src-tauri/target/` (compilación Rust) están en `.gitignore` — se
+  regeneran con `npm run desktop:build`, no se versionan.
+- La redirect URI de OAuth sigue fija a `http://localhost:3000/...`, así que
+  el servidor interno siempre escucha ahí — el `.exe` no es reubicable a
+  otro puerto sin cambiarla también en Google Cloud Console / Azure.
+- **Sin confirmar del todo**: el login de Google dentro de la ventana nativa
+  no se ha probado de principio a fin (hace falta pulsar "Conectar" con una
+  cuenta real, algo que solo puede hacer quien tenga el proyecto de Google
+  Cloud). Sí está confirmado que `/api/google/connect` redirige
+  correctamente a `accounts.google.com` desde el servidor interno. WebView2
+  (el motor de Tauri en Windows) no está en la lista de user-agents
+  embebidos que Google bloquea — a diferencia de Electron/CEF — así que es
+  razonable esperar que funcione, pero pruébalo la primera vez que conectes
+  una cuenta. Si Google lo bloqueara, no hay botón de "permitir de todas
+  formas": la alternativa sería un lanzador que abra el navegador del
+  sistema en vez de una ventana propia.
