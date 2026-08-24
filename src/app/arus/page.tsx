@@ -11,6 +11,7 @@ import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected } from "@/lib/google";
 import { getRecentDriveFiles, getUpcomingCalendarEvents } from "@/lib/googleData";
+import { deleteEvent } from "@/lib/actions";
 
 export default async function ArusPage() {
   const settings = await getSettings();
@@ -34,6 +35,13 @@ export default async function ArusPage() {
 
   // Avoid showing the same item twice: once as a local event, once read back from Calendar.
   const syncedIds = new Set(events.map((e) => e.googleEventId).filter((id): id is string => Boolean(id)));
+  const localArusEvents = events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    date: e.date,
+    section: e.section,
+    deletable: true,
+  }));
   const externalArusEvents = arusGoogleEvents
     .filter((e) => !syncedIds.has(e.id))
     .map((e) => ({ id: `google-${e.id}`, title: e.title, date: e.date, section: "ARUS" as const }));
@@ -53,10 +61,11 @@ export default async function ArusPage() {
 
         <Card title="Reuniones y eventos">
           <CountdownList
-            events={[...events, ...externalArusEvents].sort(
+            events={[...localArusEvents, ...externalArusEvents].sort(
               (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
             )}
             sectionColors={{ ARUS: section.color }}
+            onDeleteEvent={deleteEvent}
           />
           <QuickAddEvent section="ARUS" />
         </Card>

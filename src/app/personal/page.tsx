@@ -12,6 +12,7 @@ import NotesBoard from "@/components/widgets/NotesBoard";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected } from "@/lib/google";
 import { getUpcomingCalendarEvents } from "@/lib/googleData";
+import { deleteEvent } from "@/lib/actions";
 
 export default async function PersonalPage() {
   const settings = await getSettings();
@@ -37,6 +38,13 @@ export default async function PersonalPage() {
   ]);
 
   const syncedIds = new Set(events.map((e) => e.googleEventId).filter((id): id is string => Boolean(id)));
+  const localPersonalEvents = events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    date: e.date,
+    section: e.section,
+    deletable: true,
+  }));
   const externalPersonalEvents = personalGoogleEvents
     .filter((e) => !syncedIds.has(e.id))
     .map((e) => ({ id: `google-${e.id}`, title: e.title, date: e.date, section: "PERSONAL" as const }));
@@ -56,10 +64,11 @@ export default async function PersonalPage() {
 
         <Card title="Eventos">
           <CountdownList
-            events={[...events, ...externalPersonalEvents].sort(
+            events={[...localPersonalEvents, ...externalPersonalEvents].sort(
               (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
             )}
             sectionColors={{ PERSONAL: section.color }}
+            onDeleteEvent={deleteEvent}
           />
           <QuickAddEvent section="PERSONAL" />
         </Card>

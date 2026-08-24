@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { createNote } from "@/lib/actions";
+import { createNote, deleteNote } from "@/lib/actions";
+import DeleteButton from "@/components/DeleteButton";
 
 type NoteItem = {
   id: string;
@@ -54,8 +55,16 @@ export default function NotesBoard({ notes, section }: { notes: NoteItem[]; sect
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {notes.map((note) => (
-            <div key={note.id} className="bg-surface-2 border border-border rounded-lg p-3">
-              <div className="text-sm font-medium mb-1">{note.title}</div>
+            <div key={note.id} className="bg-surface-2 border border-border rounded-lg p-3 group relative">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="text-sm font-medium">{note.title}</div>
+                <DeleteButton
+                  id={note.id}
+                  action={deleteNote}
+                  confirmMessage={`¿Borrar la nota "${note.title}"?`}
+                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger text-xs transition-opacity shrink-0"
+                />
+              </div>
               {note.content && <p className="text-xs text-muted whitespace-pre-wrap mb-2">{note.content}</p>}
               {note.linkedFile && (
                 <div className="text-[11px] font-mono text-accent truncate" title={note.linkedFile}>

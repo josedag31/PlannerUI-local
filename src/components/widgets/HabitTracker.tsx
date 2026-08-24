@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { toggleHabitToday } from "@/lib/actions";
+import { toggleHabitToday, archiveHabit } from "@/lib/actions";
+import DeleteButton from "@/components/DeleteButton";
 
 type HabitItem = {
   id: string;
@@ -35,7 +36,7 @@ export default function HabitTracker({ habits }: { habits: HabitItem[] }) {
         const streak = computeStreak(habit.logs.map((l) => new Date(l.date)));
 
         return (
-          <li key={habit.id} className="flex items-center gap-3">
+          <li key={habit.id} className="flex items-center gap-3 group">
             <button
               onClick={() => startTransition(() => toggleHabitToday(habit.id))}
               disabled={isPending}
@@ -53,6 +54,12 @@ export default function HabitTracker({ habits }: { habits: HabitItem[] }) {
                 {weekCount}/{habit.targetPerWeek} esta semana · racha {streak}d
               </div>
             </div>
+            <DeleteButton
+              id={habit.id}
+              action={archiveHabit}
+              confirmMessage={`¿Quitar el hábito "${habit.name}"? Se conserva su historial, pero deja de contar.`}
+              className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger text-xs transition-opacity shrink-0"
+            />
           </li>
         );
       })}

@@ -1,8 +1,11 @@
+import DeleteButton from "@/components/DeleteButton";
+
 type EventItem = {
   id: string;
   title: string;
   date: Date;
   section: string;
+  deletable?: boolean;
 };
 
 function daysUntil(date: Date) {
@@ -21,9 +24,11 @@ function hasExplicitTime(date: Date) {
 export default function CountdownList({
   events,
   sectionColors = {},
+  onDeleteEvent,
 }: {
   events: EventItem[];
   sectionColors?: Record<string, string>;
+  onDeleteEvent?: (id: string) => Promise<void>;
 }) {
   if (events.length === 0) {
     return <p className="text-sm text-muted py-4">Sin eventos próximos.</p>;
@@ -34,7 +39,7 @@ export default function CountdownList({
       {events.map((event) => {
         const days = daysUntil(event.date);
         return (
-          <li key={event.id} className="flex items-center gap-3">
+          <li key={event.id} className="flex items-center gap-3 group">
             <span
               className="h-2 w-2 rounded-full shrink-0"
               style={{ background: sectionColors[event.section] ?? "var(--muted)" }}
@@ -48,6 +53,14 @@ export default function CountdownList({
             <span className="text-xs font-mono text-muted">
               {days === 0 ? "hoy" : days > 0 ? `${days}d` : `hace ${-days}d`}
             </span>
+            {event.deletable && onDeleteEvent && (
+              <DeleteButton
+                id={event.id}
+                action={onDeleteEvent}
+                confirmMessage={`¿Borrar "${event.title}"?`}
+                className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger text-xs transition-opacity shrink-0"
+              />
+            )}
           </li>
         );
       })}

@@ -39,7 +39,7 @@ model Task {
   done          Boolean   @default(false)
   doneAt        DateTime?
   subjectId     String?
-  subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   googleEventId   String?
   outlookEventId  String?
   createdAt       DateTime  @default(now())

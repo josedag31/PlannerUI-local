@@ -157,6 +157,12 @@ export async function toggleHabitToday(habitId: string) {
   revalidatePath("/personal");
 }
 
+export async function archiveHabit(id: string) {
+  await prisma.habit.update({ where: { id }, data: { archived: true } });
+  revalidatePath("/");
+  revalidatePath("/personal");
+}
+
 // ---------- Goals ----------
 
 export async function createGoal(formData: FormData) {
@@ -181,6 +187,14 @@ export async function createGoal(formData: FormData) {
 export async function updateGoalProgress(id: string, progress: number) {
   const clamped = Math.max(0, Math.min(100, progress));
   await prisma.goal.update({ where: { id }, data: { progress: clamped } });
+  revalidatePath("/");
+  revalidatePath("/estudios");
+  revalidatePath("/arus");
+  revalidatePath("/personal");
+}
+
+export async function deleteGoal(id: string) {
+  await prisma.goal.delete({ where: { id } });
   revalidatePath("/");
   revalidatePath("/estudios");
   revalidatePath("/arus");
@@ -217,6 +231,31 @@ export async function createExam(formData: FormData) {
   });
 
   await prisma.exam.create({ data: { subjectId, date: combined.date, notes, googleEventId, outlookEventId } });
+  revalidatePath("/estudios");
+  revalidatePath("/");
+}
+
+export async function deleteExam(id: string) {
+  const exam = await prisma.exam.delete({ where: { id }, include: { subject: true } });
+  await deleteSectionCalendarEvent(exam.subject.section, exam.googleEventId, exam.outlookEventId);
+  revalidatePath("/estudios");
+  revalidatePath("/");
+}
+
+/** Deletes a subject and, with it, every exam and task tied to it (cascade) — cleaning up their synced calendar events first. */
+export async function deleteSubject(id: string) {
+  const subject = await prisma.subject.findUnique({
+    where: { id },
+    include: { tasks: true, exams: true },
+  });
+  if (!subject) return;
+
+  await Promise.all([
+    ...subject.tasks.map((t) => deleteSectionCalendarEvent(t.section, t.googleEventId, t.outlookEventId)),
+    ...subject.exams.map((e) => deleteSectionCalendarEvent(subject.section, e.googleEventId, e.outlookEventId)),
+  ]);
+
+  await prisma.subject.delete({ where: { id } });
   revalidatePath("/estudios");
   revalidatePath("/");
 }
@@ -258,6 +297,15 @@ export async function createEvent(formData: FormData) {
   revalidatePath("/personal");
 }
 
+export async function deleteEvent(id: string) {
+  const event = await prisma.eventCountdown.delete({ where: { id } });
+  await deleteSectionCalendarEvent(event.section, event.googleEventId, event.outlookEventId);
+  revalidatePath("/");
+  revalidatePath("/estudios");
+  revalidatePath("/arus");
+  revalidatePath("/personal");
+}
+
 // ---------- Notes ----------
 
 export async function createNote(formData: FormData) {
@@ -267,6 +315,13 @@ export async function createNote(formData: FormData) {
   const section = String(formData.get("section")) as Section;
   const linkedFile = String(formData.get("linkedFile") ?? "") || null;
   await prisma.note.create({ data: { title, content, section, linkedFile } });
+  revalidatePath("/estudios");
+  revalidatePath("/arus");
+  revalidatePath("/personal");
+}
+
+export async function deleteNote(id: string) {
+  await prisma.note.delete({ where: { id } });
   revalidatePath("/estudios");
   revalidatePath("/arus");
   revalidatePath("/personal");

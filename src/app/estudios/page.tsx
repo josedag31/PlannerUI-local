@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
+import DeleteButton from "@/components/DeleteButton";
 import TaskList from "@/components/widgets/TaskList";
 import QuickAddTask from "@/components/widgets/QuickAddTask";
 import QuickAddSubject from "@/components/widgets/QuickAddSubject";
@@ -13,6 +14,7 @@ import { isMicrosoftConnected } from "@/lib/microsoft";
 import { getUpcomingOutlookEvents } from "@/lib/microsoftData";
 import { isGoogleConnected } from "@/lib/google";
 import { getUpcomingCalendarEvents } from "@/lib/googleData";
+import { deleteSubject, deleteExam } from "@/lib/actions";
 
 export default async function EstudiosPage() {
   const settings = await getSettings();
@@ -72,9 +74,15 @@ export default async function EstudiosPage() {
           <ul className="space-y-2 mb-3">
             {subjects.length === 0 && <p className="text-sm text-muted">Sin asignaturas todavía.</p>}
             {subjects.map((s: (typeof subjects)[number]) => (
-              <li key={s.id} className="flex items-center justify-between text-sm">
-                <span>{s.name}</span>
-                {s.credits && <span className="text-xs text-muted">{s.credits} ECTS</span>}
+              <li key={s.id} className="flex items-center justify-between gap-2 text-sm group">
+                <span className="flex-1 truncate">{s.name}</span>
+                {s.credits && <span className="text-xs text-muted shrink-0">{s.credits} ECTS</span>}
+                <DeleteButton
+                  id={s.id}
+                  action={deleteSubject}
+                  confirmMessage={`¿Borrar "${s.name}"? También se borrarán sus exámenes y tareas asociadas.`}
+                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger text-xs transition-opacity shrink-0"
+                />
               </li>
             ))}
           </ul>
@@ -85,12 +93,18 @@ export default async function EstudiosPage() {
           <ul className="divide-y divide-border mb-3">
             {exams.length === 0 && <p className="text-sm text-muted py-2">Sin exámenes próximos.</p>}
             {exams.map((e: (typeof exams)[number]) => (
-              <li key={e.id} className="flex items-center justify-between py-2 text-sm">
+              <li key={e.id} className="flex items-center gap-2 py-2 text-sm group">
                 <span className="font-medium">{e.subject.name}</span>
-                <span className="text-muted">{e.notes}</span>
-                <span className="text-xs font-mono">
+                <span className="text-muted flex-1 truncate">{e.notes}</span>
+                <span className="text-xs font-mono shrink-0">
                   {new Date(e.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}
                 </span>
+                <DeleteButton
+                  id={e.id}
+                  action={deleteExam}
+                  confirmMessage={`¿Borrar el examen de ${e.subject.name}?`}
+                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger text-xs transition-opacity shrink-0"
+                />
               </li>
             ))}
           </ul>

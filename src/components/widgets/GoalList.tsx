@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { updateGoalProgress } from "@/lib/actions";
+import { updateGoalProgress, deleteGoal } from "@/lib/actions";
+import DeleteButton from "@/components/DeleteButton";
 
 type GoalItem = {
   id: string;
@@ -20,14 +21,20 @@ export default function GoalList({ goals }: { goals: GoalItem[] }) {
   return (
     <ul className="space-y-4">
       {goals.map((goal) => (
-        <li key={goal.id}>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-sm font-medium">{goal.title}</span>
-            <span className="text-xs text-muted">
+        <li key={goal.id} className="group">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-sm font-medium flex-1 truncate">{goal.title}</span>
+            <span className="text-xs text-muted shrink-0">
               {goal.progress}%
               {goal.targetDate &&
                 ` · ${new Date(goal.targetDate).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}`}
             </span>
+            <DeleteButton
+              id={goal.id}
+              action={deleteGoal}
+              confirmMessage={`¿Borrar el objetivo "${goal.title}"?`}
+              className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger text-xs transition-opacity shrink-0"
+            />
           </div>
           <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
             <div

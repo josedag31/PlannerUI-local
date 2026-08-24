@@ -21,6 +21,7 @@ import { isMicrosoftConnected } from "@/lib/microsoft";
 import { getOutlookMailSummary } from "@/lib/microsoftData";
 import OutlookWidget from "@/components/widgets/OutlookWidget";
 import { getDashboardLayout } from "@/lib/dashboardLayout";
+import { deleteEvent } from "@/lib/actions";
 import { WIDGET_TITLES, type WidgetKey } from "@/lib/dashboardWidgets";
 import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
@@ -128,7 +129,13 @@ export default async function DashboardPage() {
       <Card title="Próximos eventos">
         <CountdownList
           events={[
-            ...upcomingEvents,
+            ...upcomingEvents.map((e: (typeof upcomingEvents)[number]) => ({
+              id: e.id,
+              title: e.title,
+              date: e.date,
+              section: e.section,
+              deletable: true,
+            })),
             ...upcomingExams.map((e: (typeof upcomingExams)[number]) => ({
               id: `exam-${e.id}`,
               title: `Examen ${e.subject.name}`,
@@ -137,6 +144,7 @@ export default async function DashboardPage() {
             })),
           ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())}
           sectionColors={sectionColors}
+          onDeleteEvent={deleteEvent}
         />
         <QuickAddEvent section="PERSONAL" />
       </Card>
