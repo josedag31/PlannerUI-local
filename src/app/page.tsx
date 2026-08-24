@@ -96,6 +96,12 @@ export default async function DashboardPage() {
       date: e.date,
       color: sectionColors.STUDY,
     })),
+    ...upcomingEvents.map((e: (typeof upcomingEvents)[number]) => ({
+      id: `event-${e.id}`,
+      title: e.title,
+      date: e.date,
+      color: sectionColors[e.section],
+    })),
     ...externalGoogleEvents.map((e) => ({
       id: `google-${e.id}`,
       title: e.title,

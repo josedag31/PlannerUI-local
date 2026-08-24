@@ -2,9 +2,14 @@
 
 import { useRef } from "react";
 import { createExam } from "@/lib/actions";
+import { useNowDefaults } from "@/lib/useNowDefaults";
 
 export default function QuickAddExam({ subjects }: { subjects: { id: string; name: string }[] }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+  const fillDefaults = useNowDefaults({ date: dateRef, time: timeRef });
+
   if (subjects.length === 0) {
     return <p className="text-xs text-muted">Crea primero una asignatura para poder añadir exámenes.</p>;
   }
@@ -14,6 +19,7 @@ export default function QuickAddExam({ subjects }: { subjects: { id: string; nam
       action={async (formData) => {
         await createExam(formData);
         formRef.current?.reset();
+        fillDefaults();
       }}
       className="flex flex-wrap items-center gap-2"
     >
@@ -22,8 +28,8 @@ export default function QuickAddExam({ subjects }: { subjects: { id: string; nam
           <option key={s.id} value={s.id}>{s.name}</option>
         ))}
       </select>
-      <input type="date" name="date" required className="bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-xs outline-none" />
-      <input type="time" name="time" className="bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-xs outline-none" />
+      <input ref={dateRef} type="date" name="date" required className="bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-xs outline-none" />
+      <input ref={timeRef} type="time" name="time" className="bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-xs outline-none" />
       <input
         name="notes"
         placeholder="Notas (opcional)"

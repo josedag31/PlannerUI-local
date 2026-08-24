@@ -19,6 +19,7 @@ export async function createCalendarEvent(
     start: Date;
     hasTime: boolean;
     notes?: string | null;
+    durationMinutes?: number | null;
   },
   label: GoogleAccountLabel = "PERSONAL"
 ): Promise<string | null> {
@@ -27,7 +28,10 @@ export async function createCalendarEvent(
 
   try {
     const calendar = google.calendar({ version: "v3", auth });
-    const end = new Date(input.start.getTime() + (input.hasTime ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000));
+    const durationMs = input.hasTime
+      ? (input.durationMinutes ?? 60) * 60 * 1000
+      : 24 * 60 * 60 * 1000;
+    const end = new Date(input.start.getTime() + durationMs);
 
     const { data } = await calendar.events.insert({
       calendarId: "primary",

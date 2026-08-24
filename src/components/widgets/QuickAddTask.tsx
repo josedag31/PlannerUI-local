@@ -2,9 +2,13 @@
 
 import { useRef } from "react";
 import { createTask } from "@/lib/actions";
+import { useNowDefaults } from "@/lib/useNowDefaults";
 
 export default function QuickAddTask({ section, subjects }: { section: "STUDY" | "ARUS" | "PERSONAL"; subjects?: { id: string; name: string }[] }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+  const fillDefaults = useNowDefaults({ date: dateRef, time: timeRef });
 
   return (
     <form
@@ -12,6 +16,7 @@ export default function QuickAddTask({ section, subjects }: { section: "STUDY" |
       action={async (formData) => {
         await createTask(formData);
         formRef.current?.reset();
+        fillDefaults();
       }}
       className="flex flex-wrap items-center gap-2 mb-3"
     >
@@ -36,11 +41,13 @@ export default function QuickAddTask({ section, subjects }: { section: "STUDY" |
         <option value="HIGH">Alta</option>
       </select>
       <input
+        ref={dateRef}
         type="date"
         name="dueDate"
         className="bg-surface-2 border border-border rounded-lg px-2 py-2 text-xs text-muted outline-none"
       />
       <input
+        ref={timeRef}
         type="time"
         name="dueTime"
         className="bg-surface-2 border border-border rounded-lg px-2 py-2 text-xs text-muted outline-none"

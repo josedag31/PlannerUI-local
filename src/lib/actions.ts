@@ -34,7 +34,7 @@ function combineDateAndTime(dateRaw: string, timeRaw: string): { date: Date; has
  */
 async function syncToSectionCalendar(
   section: Section,
-  item: { title: string; start: Date; hasTime: boolean; notes?: string | null }
+  item: { title: string; start: Date; hasTime: boolean; notes?: string | null; durationMinutes?: number | null }
 ): Promise<{ googleEventId: string | null; outlookEventId: string | null }> {
   if (section === "ARUS") {
     if (await isGoogleConnected("ARUS")) {
@@ -227,20 +227,30 @@ export async function createEvent(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const dateRaw = String(formData.get("date") ?? "");
   const timeRaw = String(formData.get("time") ?? "");
+  const endTimeRaw = String(formData.get("endTime") ?? "");
   if (!title || !dateRaw) return;
   const section = String(formData.get("section")) as Section;
 
   const combined = combineDateAndTime(dateRaw, timeRaw);
   if (!combined) return;
 
+  let durationMinutes: number | null = null;
+  if (combined.hasTime && endTimeRaw) {
+    const endCombined = combineDateAndTime(dateRaw, endTimeRaw);
+    if (endCombined && endCombined.date.getTime() > combined.date.getTime()) {
+      durationMinutes = Math.round((endCombined.date.getTime() - combined.date.getTime()) / 60_000);
+    }
+  }
+
   const { googleEventId, outlookEventId } = await syncToSectionCalendar(section, {
     title,
     start: combined.date,
     hasTime: combined.hasTime,
+    durationMinutes,
   });
 
   await prisma.eventCountdown.create({
-    data: { title, date: combined.date, section, googleEventId, outlookEventId },
+    data: { title, date: combined.date, section, durationMinutes, googleEventId, outlookEventId },
   });
   revalidatePath("/");
   revalidatePath("/estudios");

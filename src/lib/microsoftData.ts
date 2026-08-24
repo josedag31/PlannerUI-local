@@ -95,12 +95,14 @@ export async function createOutlookCalendarEvent(input: {
   start: Date;
   hasTime: boolean;
   notes?: string | null;
+  durationMinutes?: number | null;
 }): Promise<string | null> {
   const token = await getMicrosoftAccessToken();
   if (!token) return null;
 
   try {
-    const end = new Date(input.start.getTime() + (input.hasTime ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000));
+    const durationMs = input.hasTime ? (input.durationMinutes ?? 60) * 60 * 1000 : 24 * 60 * 60 * 1000;
+    const end = new Date(input.start.getTime() + durationMs);
     const toGraphDateTime = (d: Date) => d.toISOString().replace("Z", "");
 
     const res = await fetch("https://graph.microsoft.com/v1.0/me/events", {

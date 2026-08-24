@@ -124,6 +124,14 @@ export function GoogleOAuthConfigForm({
   return (
     <form
       action={async (formData) => {
+        if (
+          clientId &&
+          !window.confirm(
+            "Ya tienes cuentas conectadas con las credenciales actuales. Si las cambias, esas conexiones dejarán de funcionar (tendrás que reconectarlas todas). ¿Seguro que quieres guardar unas nuevas?"
+          )
+        ) {
+          return;
+        }
         await updateGoogleOAuthConfig(formData);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
@@ -186,6 +194,14 @@ export function MicrosoftOAuthConfigForm({
   return (
     <form
       action={async (formData) => {
+        if (
+          clientId &&
+          !window.confirm(
+            "Si cambias estas credenciales, tu cuenta de Outlook conectada dejará de funcionar (tendrás que reconectarla). ¿Seguro que quieres guardar unas nuevas?"
+          )
+        ) {
+          return;
+        }
         await updateMicrosoftOAuthConfig(formData);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
