@@ -51,13 +51,30 @@ editar a mano).
 Nunca subas tu `.env` a git — solo `.env.example` (con las claves vacías) va
 al repositorio.
 
+## Sincronización de calendario por sección
+
+Cada sección sincroniza con un calendario distinto, pensado para gente que
+reparte su identidad entre varias cuentas (personal, equipo, universidad):
+
+| Sección  | Calendario destino                          |
+| -------- | -------------------------------------------- |
+| Estudios | Outlook (Microsoft) — ver más abajo           |
+| ARUS     | Google, cuenta **ARUS**                       |
+| Personal | Google, cuenta **Personal**                   |
+
+Al crear una tarea, examen o evento con fecha en cualquier sección, se crea
+también un evento en el calendario que le corresponda (si esa cuenta está
+conectada). Cada página de sección, además, muestra de vuelta lo que ya
+tengas en ese calendario (deduplicado con lo que el propio planner creó ahí).
+Al completar o borrar una tarea sincronizada, su evento se borra también del
+calendario. Es best-effort en ambas direcciones: si la cuenta no está
+conectada o la llamada falla, el guardado local nunca se ve afectado.
+
 ## Fase 2: conectar Google Calendar, Drive y Gmail
 
-Calendario (lectura y escritura), Drive (lectura) y Gmail (lectura). Las
-tareas, exámenes y eventos que crees en el planner con fecha se añaden también
-como eventos en tu Google Calendar; los eventos que ya tengas en tu Calendar
-aparecen en el dashboard. Todo queda guardado localmente en tu propia base de
-datos SQLite — nunca en el repositorio ni en ningún servidor de terceros.
+Calendario (lectura y escritura), Drive (lectura) y Gmail (lectura).
+Todo queda guardado localmente en tu propia base de datos SQLite — nunca en
+el repositorio ni en ningún servidor de terceros.
 
 ### 1. Crear un proyecto en Google Cloud
 
