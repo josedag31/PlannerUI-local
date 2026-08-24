@@ -59,10 +59,16 @@ export async function createTask(formData: FormData) {
 }
 
 export async function toggleTask(id: string, done: boolean) {
-  await prisma.task.update({
+  const task = await prisma.task.update({
     where: { id },
     data: { done, doneAt: done ? new Date() : null },
   });
+
+  if (done && task.googleEventId) {
+    await deleteCalendarEvent(task.googleEventId);
+    await prisma.task.update({ where: { id }, data: { googleEventId: null } });
+  }
+
   revalidatePath("/");
   revalidatePath("/estudios");
   revalidatePath("/arus");

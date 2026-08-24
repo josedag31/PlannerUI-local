@@ -47,8 +47,17 @@ export default async function DashboardPage() {
     prisma.goal.findMany({ where: { archived: false }, orderBy: { createdAt: "desc" } }),
     prisma.eventCountdown.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6 }),
     prisma.exam.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6, include: { subject: true } }),
-    prisma.task.findMany({ where: { dueDate: { gte: today, lte: weekAhead } }, include: { subject: true } }),
+    prisma.task.findMany({ where: { done: false, dueDate: { gte: today, lte: weekAhead } }, include: { subject: true } }),
   ]);
+
+  // Google Calendar events that already correspond to a local task/exam/event
+  // (created via sync) are excluded here to avoid showing the same thing twice.
+  const syncedGoogleEventIds = new Set(
+    [...weekTasks, ...upcomingExams, ...upcomingEvents]
+      .map((item: { googleEventId: string | null }) => item.googleEventId)
+      .filter((id): id is string => Boolean(id))
+  );
+  const externalGoogleEvents = googleEvents.filter((e) => !syncedGoogleEventIds.has(e.id));
 
   const weekItems = [
     ...weekTasks.filter((t: (typeof weekTasks)[number]) => t.dueDate).map((t: (typeof weekTasks)[number]) => ({
@@ -63,7 +72,7 @@ export default async function DashboardPage() {
       date: e.date,
       color: sectionColors.STUDY,
     })),
-    ...googleEvents.map((e) => ({
+    ...externalGoogleEvents.map((e) => ({
       id: `google-${e.id}`,
       title: e.title,
       date: e.date,
@@ -119,7 +128,7 @@ export default async function DashboardPage() {
         {googleConnected && (
           <>
             <Card title="Google Calendar">
-              <GoogleCalendarWidget events={googleEvents.slice(0, 8)} />
+              <GoogleCalendarWidget events={externalGoogleEvents.slice(0, 8)} />
             </Card>
 
             <Card title="Google Drive">
