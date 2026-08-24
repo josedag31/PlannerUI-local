@@ -14,7 +14,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/ajustes?google_error=sin_codigo", request.url));
   }
 
-  const client = getOAuthClient();
+  const client = await getOAuthClient();
+  if (!client) {
+    return NextResponse.redirect(new URL("/ajustes?google_error=sin_credenciales", request.url));
+  }
+
   const { tokens } = await client.getToken(code);
   client.setCredentials(tokens);
 

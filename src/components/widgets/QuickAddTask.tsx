@@ -40,6 +40,11 @@ export default function QuickAddTask({ section, subjects }: { section: "STUDY" |
         name="dueDate"
         className="bg-surface-2 border border-border rounded-lg px-2 py-2 text-xs text-muted outline-none"
       />
+      <input
+        type="time"
+        name="dueTime"
+        className="bg-surface-2 border border-border rounded-lg px-2 py-2 text-xs text-muted outline-none"
+      />
       <button
         type="submit"
         className="bg-accent text-background text-sm font-semibold rounded-lg px-3 py-2 hover:brightness-110"

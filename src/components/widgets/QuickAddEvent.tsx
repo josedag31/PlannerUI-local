@@ -27,6 +27,11 @@ export default function QuickAddEvent({ section }: { section: "STUDY" | "ARUS" |
         required
         className="bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-xs outline-none"
       />
+      <input
+        type="time"
+        name="time"
+        className="bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-xs outline-none"
+      />
       <button type="submit" className="text-xs font-semibold text-accent hover:brightness-110">
         + añadir
       </button>

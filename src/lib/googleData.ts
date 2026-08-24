@@ -7,6 +7,56 @@ export type GoogleCalendarEvent = {
   date: Date;
 };
 
+/**
+ * Pushes a local item to Google Calendar as a new event. Best-effort: returns
+ * null (never throws) if Google isn't connected or the API call fails, so
+ * callers can save locally regardless of calendar sync succeeding.
+ */
+export async function createCalendarEvent(input: {
+  title: string;
+  start: Date;
+  hasTime: boolean;
+  notes?: string | null;
+}): Promise<string | null> {
+  const auth = await getAuthenticatedClient();
+  if (!auth) return null;
+
+  try {
+    const calendar = google.calendar({ version: "v3", auth });
+    const end = new Date(input.start.getTime() + (input.hasTime ? 60 * 60 * 1000 : 0));
+
+    const { data } = await calendar.events.insert({
+      calendarId: "primary",
+      requestBody: {
+        summary: input.title,
+        description: input.notes ?? undefined,
+        start: input.hasTime
+          ? { dateTime: input.start.toISOString() }
+          : { date: input.start.toISOString().slice(0, 10) },
+        end: input.hasTime
+          ? { dateTime: end.toISOString() }
+          : { date: input.start.toISOString().slice(0, 10) },
+      },
+    });
+
+    return data.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteCalendarEvent(eventId: string): Promise<void> {
+  const auth = await getAuthenticatedClient();
+  if (!auth) return;
+
+  try {
+    const calendar = google.calendar({ version: "v3", auth });
+    await calendar.events.delete({ calendarId: "primary", eventId });
+  } catch {
+    // best-effort: ignore (event may already be gone)
+  }
+}
+
 export async function getUpcomingCalendarEvents(maxResults = 8): Promise<GoogleCalendarEvent[]> {
   const auth = await getAuthenticatedClient();
   if (!auth) return [];

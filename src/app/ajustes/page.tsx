@@ -1,7 +1,7 @@
 import Card from "@/components/Card";
 import { getSettings, SECTION_KEYS } from "@/lib/settings";
-import { AppSettingsForm, SectionConfigForm } from "@/components/widgets/SettingsForms";
-import { isGoogleConfigured, isGoogleConnected } from "@/lib/google";
+import { AppSettingsForm, SectionConfigForm, GoogleOAuthConfigForm } from "@/components/widgets/SettingsForms";
+import { isGoogleConfigured, isGoogleConnected, getGoogleOAuthConfig, DEFAULT_REDIRECT_URI } from "@/lib/google";
 import { prisma } from "@/lib/prisma";
 
 export default async function AjustesPage({
@@ -11,9 +11,10 @@ export default async function AjustesPage({
 }) {
   const settings = await getSettings();
   const params = await searchParams;
-  const configured = isGoogleConfigured();
+  const configured = await isGoogleConfigured();
   const connected = await isGoogleConnected();
   const account = connected ? await prisma.googleAccount.findUnique({ where: { id: 1 } }) : null;
+  const oauthConfig = await getGoogleOAuthConfig();
 
   return (
     <div className="space-y-6">
@@ -54,22 +55,13 @@ export default async function AjustesPage({
             <p className="text-xs text-danger mb-3">Error al conectar con Google: {params.google_error}</p>
           )}
 
-          {!configured ? (
-            <div className="text-sm text-muted space-y-2">
-              <p>
-                Todavía no has configurado las credenciales de Google. Añade{" "}
-                <code className="text-accent">GOOGLE_CLIENT_ID</code>,{" "}
-                <code className="text-accent">GOOGLE_CLIENT_SECRET</code> y{" "}
-                <code className="text-accent">GOOGLE_REDIRECT_URI</code> en tu <code>.env</code>.
-              </p>
-              <p>Consulta el README (sección &quot;Fase 2&quot;) para los pasos exactos en Google Cloud Console.</p>
-            </div>
-          ) : connected ? (
-            <div className="flex items-center justify-between gap-4">
+          {connected ? (
+            <div className="flex items-center justify-between gap-4 mb-6">
               <div className="text-sm">
                 <span className="text-accent">●</span> Conectado{account?.email ? ` como ${account.email}` : ""}.
                 <div className="text-xs text-muted mt-1">
-                  Calendario, Drive y Gmail (solo lectura) disponibles en el dashboard.
+                  Calendario, Drive y Gmail disponibles en el dashboard. Las tareas, exámenes y eventos que crees
+                  con fecha se añaden también a tu Google Calendar.
                 </div>
               </div>
               <form action="/api/google/disconnect" method="POST">
@@ -81,10 +73,11 @@ export default async function AjustesPage({
                 </button>
               </form>
             </div>
-          ) : (
-            <div className="flex items-center justify-between gap-4">
+          ) : configured ? (
+            <div className="flex items-center justify-between gap-4 mb-6">
               <p className="text-sm text-muted">
-                Conecta tu cuenta de Google para ver tu Calendario, Drive y Gmail en el dashboard.
+                Credenciales guardadas. Conecta tu cuenta de Google para ver tu Calendario, Drive y Gmail en el
+                dashboard.
               </p>
               <a
                 href="/api/google/connect"
@@ -93,7 +86,24 @@ export default async function AjustesPage({
                 Conectar Google
               </a>
             </div>
+          ) : (
+            <p className="text-sm text-muted mb-6">
+              Introduce las credenciales de tu proyecto de Google Cloud para poder conectar tu cuenta. Consulta el
+              README (sección &quot;Fase 2&quot;) para los pasos exactos.
+            </p>
           )}
+
+          <details className="text-sm" open={!configured}>
+            <summary className="cursor-pointer text-muted hover:text-foreground select-none">
+              {configured ? "Editar credenciales de Google" : "Credenciales de Google"}
+            </summary>
+            <div className="mt-3">
+              <GoogleOAuthConfigForm
+                clientId={oauthConfig?.clientId ?? ""}
+                redirectUri={oauthConfig?.redirectUri ?? DEFAULT_REDIRECT_URI}
+              />
+            </div>
+          </details>
         </Card>
       </div>
     </div>

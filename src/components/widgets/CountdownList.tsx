@@ -13,6 +13,11 @@ function daysUntil(date: Date) {
   return Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function hasExplicitTime(date: Date) {
+  const d = new Date(date);
+  return d.getHours() !== 0 || d.getMinutes() !== 0;
+}
+
 export default function CountdownList({
   events,
   sectionColors = {},
@@ -35,6 +40,11 @@ export default function CountdownList({
               style={{ background: sectionColors[event.section] ?? "var(--muted)" }}
             />
             <span className="flex-1 text-sm truncate">{event.title}</span>
+            {hasExplicitTime(event.date) && (
+              <span className="text-xs text-muted">
+                {new Date(event.date).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
             <span className="text-xs font-mono text-muted">
               {days === 0 ? "hoy" : days > 0 ? `${days}d` : `hace ${-days}d`}
             </span>

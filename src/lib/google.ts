@@ -2,24 +2,27 @@ import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
 
 export const GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar",
   "https://www.googleapis.com/auth/drive.readonly",
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
-export function isGoogleConfigured() {
-  return Boolean(
-    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI
-  );
+export const DEFAULT_REDIRECT_URI = "http://localhost:3000/api/google/callback";
+
+export async function getGoogleOAuthConfig() {
+  return prisma.googleOAuthConfig.findUnique({ where: { id: 1 } });
 }
 
-export function getOAuthClient() {
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  );
+export async function isGoogleConfigured() {
+  const config = await getGoogleOAuthConfig();
+  return Boolean(config?.clientId && config?.clientSecret);
+}
+
+export async function getOAuthClient() {
+  const config = await getGoogleOAuthConfig();
+  if (!config) return null;
+  return new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
 }
 
 export async function isGoogleConnected() {
@@ -36,7 +39,9 @@ export async function getAuthenticatedClient() {
   const account = await prisma.googleAccount.findUnique({ where: { id: 1 } });
   if (!account) return null;
 
-  const client = getOAuthClient();
+  const client = await getOAuthClient();
+  if (!client) return null;
+
   client.setCredentials({
     access_token: account.accessToken,
     refresh_token: account.refreshToken,

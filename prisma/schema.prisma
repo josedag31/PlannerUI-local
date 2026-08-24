@@ -25,18 +25,19 @@ enum Priority {
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  section     Section
-  priority    Priority  @default(MEDIUM)
-  dueDate     DateTime?
-  done        Boolean   @default(false)
-  doneAt      DateTime?
-  subjectId   String?
-  subject     Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  section       Section
+  priority      Priority  @default(MEDIUM)
+  dueDate       DateTime?
+  done          Boolean   @default(false)
+  doneAt        DateTime?
+  subjectId     String?
+  subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  googleEventId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Habit {
@@ -82,20 +83,22 @@ model Subject {
 }
 
 model Exam {
-  id        String   @id @default(cuid())
-  subjectId String
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  date      DateTime
-  notes     String?
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  subjectId     String
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date          DateTime
+  notes         String?
+  googleEventId String?
+  createdAt     DateTime @default(now())
 }
 
 model EventCountdown {
-  id        String   @id @default(cuid())
-  title     String
-  section   Section
-  date      DateTime
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  title         String
+  section       Section
+  date          DateTime
+  googleEventId String?
+  createdAt     DateTime @default(now())
 }
 
 model Note {
@@ -129,5 +132,13 @@ model GoogleAccount {
   expiryDate   BigInt
   scope        String
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model GoogleOAuthConfig {
+  id           Int      @id @default(1)
+  clientId     String
+  clientSecret String
+  redirectUri  String   @default("http://localhost:3000/api/google/callback")
   updatedAt    DateTime @updatedAt
 }

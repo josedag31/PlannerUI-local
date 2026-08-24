@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import { getOAuthClient, GOOGLE_SCOPES, isGoogleConfigured } from "@/lib/google";
 
 export async function GET() {
-  if (!isGoogleConfigured()) {
+  if (!(await isGoogleConfigured())) {
     return NextResponse.json(
-      { error: "Faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI en .env" },
+      { error: "Faltan las credenciales de Google. Configúralas en /ajustes." },
       { status: 400 }
     );
   }
 
-  const client = getOAuthClient();
+  const client = await getOAuthClient();
+  if (!client) {
+    return NextResponse.json({ error: "No se pudo crear el cliente de Google." }, { status: 400 });
+  }
+
   const url = client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",

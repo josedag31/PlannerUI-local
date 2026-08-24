@@ -3,11 +3,21 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { Priority, Section } from "@/generated/prisma/client";
+import { isGoogleConnected } from "@/lib/google";
+import { createCalendarEvent, deleteCalendarEvent } from "@/lib/googleData";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   return x;
+}
+
+/** Combines a `<input type="date">` value with an optional `<input type="time">` value. */
+function combineDateAndTime(dateRaw: string, timeRaw: string): { date: Date; hasTime: boolean } | null {
+  if (!dateRaw) return null;
+  const hasTime = Boolean(timeRaw);
+  const date = new Date(hasTime ? `${dateRaw}T${timeRaw}` : `${dateRaw}T00:00`);
+  return { date, hasTime };
 }
 
 // ---------- Tasks ----------
@@ -17,16 +27,29 @@ export async function createTask(formData: FormData) {
   if (!title) return;
   const section = String(formData.get("section")) as Section;
   const dueDateRaw = String(formData.get("dueDate") ?? "");
+  const dueTimeRaw = String(formData.get("dueTime") ?? "");
   const priority = (String(formData.get("priority") ?? "MEDIUM")) as Priority;
   const subjectId = String(formData.get("subjectId") ?? "") || null;
+
+  const combined = combineDateAndTime(dueDateRaw, dueTimeRaw);
+
+  let googleEventId: string | null = null;
+  if (combined && (await isGoogleConnected())) {
+    googleEventId = await createCalendarEvent({
+      title,
+      start: combined.date,
+      hasTime: combined.hasTime,
+    });
+  }
 
   await prisma.task.create({
     data: {
       title,
       section,
       priority,
-      dueDate: dueDateRaw ? new Date(dueDateRaw) : null,
+      dueDate: combined?.date ?? null,
       subjectId,
+      googleEventId,
     },
   });
   revalidatePath("/");
@@ -47,7 +70,8 @@ export async function toggleTask(id: string, done: boolean) {
 }
 
 export async function deleteTask(id: string) {
-  await prisma.task.delete({ where: { id } });
+  const task = await prisma.task.delete({ where: { id } });
+  if (task.googleEventId) await deleteCalendarEvent(task.googleEventId);
   revalidatePath("/");
   revalidatePath("/estudios");
   revalidatePath("/arus");
@@ -125,9 +149,26 @@ export async function createSubject(formData: FormData) {
 export async function createExam(formData: FormData) {
   const subjectId = String(formData.get("subjectId") ?? "");
   const dateRaw = String(formData.get("date") ?? "");
+  const timeRaw = String(formData.get("time") ?? "");
   if (!subjectId || !dateRaw) return;
   const notes = String(formData.get("notes") ?? "") || null;
-  await prisma.exam.create({ data: { subjectId, date: new Date(dateRaw), notes } });
+
+  const combined = combineDateAndTime(dateRaw, timeRaw);
+  if (!combined) return;
+
+  const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
+
+  let googleEventId: string | null = null;
+  if (await isGoogleConnected()) {
+    googleEventId = await createCalendarEvent({
+      title: `Examen ${subject?.name ?? ""}`.trim(),
+      start: combined.date,
+      hasTime: combined.hasTime,
+      notes,
+    });
+  }
+
+  await prisma.exam.create({ data: { subjectId, date: combined.date, notes, googleEventId } });
   revalidatePath("/estudios");
   revalidatePath("/");
 }
@@ -137,9 +178,25 @@ export async function createExam(formData: FormData) {
 export async function createEvent(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const dateRaw = String(formData.get("date") ?? "");
+  const timeRaw = String(formData.get("time") ?? "");
   if (!title || !dateRaw) return;
   const section = String(formData.get("section")) as Section;
-  await prisma.eventCountdown.create({ data: { title, date: new Date(dateRaw), section } });
+
+  const combined = combineDateAndTime(dateRaw, timeRaw);
+  if (!combined) return;
+
+  let googleEventId: string | null = null;
+  if (await isGoogleConnected()) {
+    googleEventId = await createCalendarEvent({
+      title,
+      start: combined.date,
+      hasTime: combined.hasTime,
+    });
+  }
+
+  await prisma.eventCountdown.create({
+    data: { title, date: combined.date, section, googleEventId },
+  });
   revalidatePath("/");
   revalidatePath("/estudios");
   revalidatePath("/arus");
@@ -188,4 +245,18 @@ export async function updateSectionConfig(formData: FormData) {
     create: { key, label, color, icon },
   });
   revalidatePath("/", "layout");
+}
+
+export async function updateGoogleOAuthConfig(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "").trim();
+  const clientSecret = String(formData.get("clientSecret") ?? "").trim();
+  const redirectUri = String(formData.get("redirectUri") ?? "").trim();
+  if (!clientId || !clientSecret || !redirectUri) return;
+
+  await prisma.googleOAuthConfig.upsert({
+    where: { id: 1 },
+    update: { clientId, clientSecret, redirectUri },
+    create: { id: 1, clientId, clientSecret, redirectUri },
+  });
+  revalidatePath("/ajustes");
 }

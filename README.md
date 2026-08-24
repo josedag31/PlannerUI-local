@@ -41,17 +41,23 @@ Copia `.env.example` a `.env` y ajusta:
 - `DATABASE_URL`: ruta del fichero SQLite local (por defecto `./dev.db`).
 - `WATCHED_FOLDERS`: rutas absolutas separadas por coma a carpetas locales que
   quieras enlazar desde el planner (apuntes, repos, proyectos). Vacío por defecto.
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI`: para la
-  Fase 2 (Google Calendar / Drive / Gmail). Ver más abajo cómo obtenerlas.
+
+Las credenciales de Google (Fase 2) **no van en `.env`**: se introducen desde
+la propia app en `/ajustes` y se guardan en tu base de datos SQLite local, para
+que la configuración completa viva en un solo sitio (pensado también para el
+día que esto se empaquete como app de escritorio, sin ficheros de entorno que
+editar a mano).
 
 Nunca subas tu `.env` a git — solo `.env.example` (con las claves vacías) va
 al repositorio.
 
 ## Fase 2: conectar Google Calendar, Drive y Gmail
 
-La integración es solo lectura (calendario, archivos recientes y correos sin
-leer) y queda guardada localmente en tu propia base de datos SQLite — nunca en
-el repositorio ni en ningún servidor de terceros.
+Calendario (lectura y escritura), Drive (lectura) y Gmail (lectura). Las
+tareas, exámenes y eventos que crees en el planner con fecha se añaden también
+como eventos en tu Google Calendar; los eventos que ya tengas en tu Calendar
+aparecen en el dashboard. Todo queda guardado localmente en tu propia base de
+datos SQLite — nunca en el repositorio ni en ningún servidor de terceros.
 
 ### 1. Crear un proyecto en Google Cloud
 
@@ -84,24 +90,24 @@ el repositorio ni en ningún servidor de terceros.
 4. Guarda y copia el **ID de cliente** y el **secreto de cliente** que te
    muestra Google.
 
-### 4. Rellenar tu `.env`
+### 4. Guardar las credenciales en la app
 
-```bash
-GOOGLE_CLIENT_ID="tu-id-de-cliente.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="tu-secreto-de-cliente"
-GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
-```
+Ve a `/ajustes` → tarjeta "Conexión con Google" → abre "Credenciales de
+Google" y pega el **Client ID** y el **Client secret**. La Redirect URI ya
+viene rellena con `http://localhost:3000/api/google/callback` — déjala igual
+que la que registraste en el paso anterior. Guarda.
 
-Reinicia `npm run dev` después de editar el `.env`.
+No hace falta reiniciar nada: se guarda directamente en la base de datos y el
+botón "Conectar Google" aparece al momento.
 
-### 5. Conectar desde la app
+### 5. Conectar tu cuenta
 
-Ve a `/ajustes` → tarjeta "Conexión con Google" → **Conectar Google**. Te
-llevará al consentimiento de Google y, al aceptar, volverás al planner con
-Calendar, Drive y Gmail ya visibles en el dashboard. Puedes desconectar la
-cuenta en cualquier momento desde la misma tarjeta (borra el token guardado
-localmente, no revoca el acceso en tu cuenta de Google — para eso, revócalo
-desde [myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
+Pulsa **Conectar Google**. Te llevará al consentimiento de Google y, al
+aceptar, volverás al planner con Calendar, Drive y Gmail ya visibles en el
+dashboard. Puedes desconectar la cuenta en cualquier momento desde la misma
+tarjeta (borra el token guardado localmente, no revoca el acceso en tu cuenta
+de Google — para eso, revócalo desde
+[myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
 
 ## Adaptar a tu propio caso
 

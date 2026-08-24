@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateAppSettings, updateSectionConfig } from "@/lib/actions";
+import { updateAppSettings, updateSectionConfig, updateGoogleOAuthConfig } from "@/lib/actions";
 
 export function AppSettingsForm({ appName, tagline }: { appName: string; tagline: string }) {
   const [saved, setSaved] = useState(false);
@@ -101,6 +101,66 @@ export function SectionConfigForm({
         className="text-sm font-semibold text-accent hover:brightness-110 px-2 py-2"
       >
         {saved ? "Guardado ✓" : "Guardar"}
+      </button>
+    </form>
+  );
+}
+
+export function GoogleOAuthConfigForm({
+  clientId,
+  redirectUri,
+}: {
+  clientId: string;
+  redirectUri: string;
+}) {
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <form
+      action={async (formData) => {
+        await updateGoogleOAuthConfig(formData);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }}
+      className="space-y-3"
+    >
+      <div>
+        <label className="block text-xs text-muted mb-1">Client ID</label>
+        <input
+          name="clientId"
+          defaultValue={clientId}
+          required
+          placeholder="xxxxxxxxxx.apps.googleusercontent.com"
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">Client secret</label>
+        <input
+          name="clientSecret"
+          type="password"
+          required
+          placeholder="GOCSPX-..."
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+        <p className="text-[11px] text-muted mt-1">
+          No se muestra por seguridad una vez guardado: si vuelves a guardar, tienes que pegarlo de nuevo.
+        </p>
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">Redirect URI (regístrala igual en Google Cloud)</label>
+        <input
+          name="redirectUri"
+          defaultValue={redirectUri}
+          required
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+        />
+      </div>
+      <button
+        type="submit"
+        className="bg-accent text-background text-sm font-semibold rounded-lg px-4 py-2 hover:brightness-110"
+      >
+        {saved ? "Guardado ✓" : "Guardar credenciales"}
       </button>
     </form>
   );

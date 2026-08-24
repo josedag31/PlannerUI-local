@@ -18,6 +18,11 @@ const priorityColor: Record<string, string> = {
   LOW: "var(--muted)",
 };
 
+function hasExplicitTime(date: Date) {
+  const d = new Date(date);
+  return d.getHours() !== 0 || d.getMinutes() !== 0;
+}
+
 export default function TaskList({ tasks, emptyLabel = "Sin tareas. Buen trabajo." }: { tasks: TaskItem[]; emptyLabel?: string }) {
   const [isPending, startTransition] = useTransition();
 
@@ -57,6 +62,8 @@ export default function TaskList({ tasks, emptyLabel = "Sin tareas. Buen trabajo
           {task.dueDate && (
             <span className="text-[11px] text-muted">
               {new Date(task.dueDate).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+              {hasExplicitTime(task.dueDate) &&
+                ` · ${new Date(task.dueDate).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
             </span>
           )}
           <span
