@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
+import DashboardGrid from "@/components/DashboardGrid";
 import TaskList from "@/components/widgets/TaskList";
 import QuickAddTask from "@/components/widgets/QuickAddTask";
 import HabitTracker from "@/components/widgets/HabitTracker";
@@ -9,6 +10,7 @@ import WeekView from "@/components/widgets/WeekView";
 import QuickAddHabit from "@/components/widgets/QuickAddHabit";
 import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
+import ClockWidget from "@/components/widgets/ClockWidget";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected } from "@/lib/google";
 import { getUpcomingCalendarEvents, getRecentDriveFiles, getGmailSummary } from "@/lib/googleData";
@@ -18,13 +20,28 @@ import GmailWidget from "@/components/widgets/GmailWidget";
 import { isMicrosoftConnected } from "@/lib/microsoft";
 import { getOutlookMailSummary } from "@/lib/microsoftData";
 import OutlookWidget from "@/components/widgets/OutlookWidget";
+import { getDashboardLayout, WIDGET_TITLES, type WidgetKey } from "@/lib/dashboardLayout";
+import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
 export default async function DashboardPage() {
   const settings = await getSettings();
-  const googleConnected = await isGoogleConnected();
-  const [googleEvents, driveFiles, gmailSummary] = googleConnected
-    ? await Promise.all([getUpcomingCalendarEvents(20), getRecentDriveFiles(), getGmailSummary()])
-    : [[], [], null];
+  const layout = await getDashboardLayout();
+
+  const calendarAccount: GoogleAccountLabel = settings.dashboardAccounts.calendar;
+  const driveAccount: GoogleAccountLabel = settings.dashboardAccounts.drive;
+  const gmailAccount: GoogleAccountLabel = settings.dashboardAccounts.gmail;
+
+  const [calendarConnected, driveConnected, gmailConnected] = await Promise.all([
+    isGoogleConnected(calendarAccount),
+    isGoogleConnected(driveAccount),
+    isGoogleConnected(gmailAccount),
+  ]);
+
+  const [googleEvents, driveFiles, gmailSummary] = await Promise.all([
+    calendarConnected ? getUpcomingCalendarEvents(20, calendarAccount) : Promise.resolve([]),
+    driveConnected ? getRecentDriveFiles(8, driveAccount) : Promise.resolve([]),
+    gmailConnected ? getGmailSummary(gmailAccount) : Promise.resolve(null),
+  ]);
 
   const outlookConnected = await isMicrosoftConnected();
   const outlookSummary = outlookConnected ? await getOutlookMailSummary() : null;
@@ -86,6 +103,76 @@ export default async function DashboardPage() {
     })),
   ];
 
+  const anyGoogleDisconnected = !calendarConnected || !driveConnected || !gmailConnected;
+
+  const widgets: Partial<Record<WidgetKey, React.ReactNode>> = {
+    week: (
+      <Card title="Semana" className="lg:col-span-3">
+        <WeekView items={weekItems} />
+      </Card>
+    ),
+    tasks: (
+      <Card title="Tareas pendientes" className="lg:col-span-2">
+        <QuickAddTask section="PERSONAL" />
+        <TaskList tasks={pendingTasks} />
+      </Card>
+    ),
+    events: (
+      <Card title="Próximos eventos">
+        <CountdownList
+          events={[
+            ...upcomingEvents,
+            ...upcomingExams.map((e: (typeof upcomingExams)[number]) => ({
+              id: `exam-${e.id}`,
+              title: `Examen ${e.subject.name}`,
+              date: e.date,
+              section: "STUDY",
+            })),
+          ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())}
+          sectionColors={sectionColors}
+        />
+        <QuickAddEvent section="PERSONAL" />
+      </Card>
+    ),
+    habits: (
+      <Card title="Hábitos">
+        <HabitTracker habits={habits} />
+        <QuickAddHabit section="PERSONAL" />
+      </Card>
+    ),
+    goals: (
+      <Card title="Objetivos del año" className="lg:col-span-2">
+        <GoalList goals={goals} />
+        <QuickAddGoal section="PERSONAL" />
+      </Card>
+    ),
+    clock: (
+      <Card title="Reloj">
+        <ClockWidget />
+      </Card>
+    ),
+    googleCalendar: calendarConnected ? (
+      <Card title="Google Calendar">
+        <GoogleCalendarWidget events={externalGoogleEvents.slice(0, 8)} />
+      </Card>
+    ) : undefined,
+    googleDrive: driveConnected ? (
+      <Card title="Google Drive">
+        <GoogleDriveWidget files={driveFiles} />
+      </Card>
+    ) : undefined,
+    gmail: gmailConnected ? (
+      <Card title="Gmail">
+        <GmailWidget summary={gmailSummary} />
+      </Card>
+    ) : undefined,
+    outlook: outlookConnected ? (
+      <Card title="Outlook">
+        <OutlookWidget summary={outlookSummary} />
+      </Card>
+    ) : undefined,
+  };
+
   return (
     <div className="space-y-6">
       <header>
@@ -95,72 +182,15 @@ export default async function DashboardPage() {
         </p>
       </header>
 
-      <Card title="Semana">
-        <WeekView items={weekItems} />
-      </Card>
+      <DashboardGrid layout={layout} widgets={widgets} widgetTitles={WIDGET_TITLES} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card title="Tareas pendientes" className="lg:col-span-2">
-          <QuickAddTask section="PERSONAL" />
-          <TaskList tasks={pendingTasks} />
-        </Card>
-
-        <Card title="Próximos eventos">
-          <CountdownList
-            events={[
-              ...upcomingEvents,
-              ...upcomingExams.map((e: (typeof upcomingExams)[number]) => ({
-                id: `exam-${e.id}`,
-                title: `Examen ${e.subject.name}`,
-                date: e.date,
-                section: "STUDY",
-              })),
-            ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())}
-            sectionColors={sectionColors}
-          />
-          <QuickAddEvent section="PERSONAL" />
-        </Card>
-
-        <Card title="Hábitos">
-          <HabitTracker habits={habits} />
-          <QuickAddHabit section="PERSONAL" />
-        </Card>
-
-        <Card title="Objetivos del año" className="lg:col-span-2">
-          <GoalList goals={goals} />
-          <QuickAddGoal section="PERSONAL" />
-        </Card>
-
-        {googleConnected && (
-          <>
-            <Card title="Google Calendar">
-              <GoogleCalendarWidget events={externalGoogleEvents.slice(0, 8)} />
-            </Card>
-
-            <Card title="Google Drive">
-              <GoogleDriveWidget files={driveFiles} />
-            </Card>
-
-            <Card title="Gmail">
-              <GmailWidget summary={gmailSummary} />
-            </Card>
-          </>
-        )}
-
-        {outlookConnected && (
-          <Card title="Outlook">
-            <OutlookWidget summary={outlookSummary} />
-          </Card>
-        )}
-      </div>
-
-      {(!googleConnected || !outlookConnected) && (
+      {(anyGoogleDisconnected || !outlookConnected) && (
         <p className="text-xs text-muted">
           Conecta tus cuentas en{" "}
           <a href="/ajustes" className="text-accent hover:brightness-110">
             Ajustes
           </a>{" "}
-          para ver aquí tu Calendar, Drive, Gmail y Outlook.
+          para ver aquí tu Calendar, Drive, Gmail y Outlook — y elegir qué cuenta usa cada uno.
         </p>
       )}
     </div>

@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Priority, Section } from "@/generated/prisma/client";
+import type { Priority, Section, GoogleAccountLabel } from "@/generated/prisma/client";
+import type { WidgetLayoutItem } from "@/lib/dashboardLayout";
 import { isGoogleConnected } from "@/lib/google";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/googleData";
 import { isMicrosoftConnected } from "@/lib/microsoft";
@@ -318,4 +319,38 @@ export async function updateMicrosoftOAuthConfig(formData: FormData) {
     create: { id: 1, clientId, clientSecret, tenantId, redirectUri },
   });
   revalidatePath("/ajustes");
+}
+
+// ---------- Dashboard customization ----------
+
+export async function updateDashboardAccounts(formData: FormData) {
+  const calendar = String(formData.get("calendar") ?? "PERSONAL") as GoogleAccountLabel;
+  const drive = String(formData.get("drive") ?? "PERSONAL") as GoogleAccountLabel;
+  const gmail = String(formData.get("gmail") ?? "PERSONAL") as GoogleAccountLabel;
+
+  await prisma.appSettings.upsert({
+    where: { id: 1 },
+    update: {
+      dashboardCalendarAccount: calendar,
+      dashboardDriveAccount: drive,
+      dashboardGmailAccount: gmail,
+    },
+    create: {
+      id: 1,
+      dashboardCalendarAccount: calendar,
+      dashboardDriveAccount: drive,
+      dashboardGmailAccount: gmail,
+    },
+  });
+  revalidatePath("/");
+  revalidatePath("/ajustes");
+}
+
+export async function updateDashboardLayout(layout: WidgetLayoutItem[]) {
+  await prisma.dashboardLayout.upsert({
+    where: { id: 1 },
+    update: { order: JSON.stringify(layout) },
+    create: { id: 1, order: JSON.stringify(layout) },
+  });
+  revalidatePath("/");
 }

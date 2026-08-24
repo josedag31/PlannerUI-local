@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Section } from "@/generated/prisma/client";
+import type { Section, GoogleAccountLabel } from "@/generated/prisma/client";
 
 export const SECTION_KEYS: Section[] = ["STUDY", "ARUS", "PERSONAL"];
 
@@ -13,6 +13,11 @@ export type ResolvedSettings = {
   appName: string;
   tagline: string;
   sections: Record<Section, { label: string; color: string; icon: string }>;
+  dashboardAccounts: {
+    calendar: GoogleAccountLabel;
+    drive: GoogleAccountLabel;
+    gmail: GoogleAccountLabel;
+  };
 };
 
 export async function getSettings(): Promise<ResolvedSettings> {
@@ -39,5 +44,14 @@ export async function getSettings(): Promise<ResolvedSettings> {
     }
   }
 
-  return { appName: app.appName, tagline: app.tagline, sections };
+  return {
+    appName: app.appName,
+    tagline: app.tagline,
+    sections,
+    dashboardAccounts: {
+      calendar: app.dashboardCalendarAccount,
+      drive: app.dashboardDriveAccount,
+      gmail: app.dashboardGmailAccount,
+    },
+  };
 }

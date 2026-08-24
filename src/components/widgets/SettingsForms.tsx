@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { updateAppSettings, updateSectionConfig, updateGoogleOAuthConfig, updateMicrosoftOAuthConfig } from "@/lib/actions";
+import {
+  updateAppSettings,
+  updateSectionConfig,
+  updateGoogleOAuthConfig,
+  updateMicrosoftOAuthConfig,
+  updateDashboardAccounts,
+} from "@/lib/actions";
 
 export function AppSettingsForm({ appName, tagline }: { appName: string; tagline: string }) {
   const [saved, setSaved] = useState(false);
@@ -232,6 +238,59 @@ export function MicrosoftOAuthConfigForm({
         className="bg-accent text-background text-sm font-semibold rounded-lg px-4 py-2 hover:brightness-110"
       >
         {saved ? "Guardado ✓" : "Guardar credenciales"}
+      </button>
+    </form>
+  );
+}
+
+export function DashboardAccountsForm({
+  calendar,
+  drive,
+  gmail,
+  accountOptions,
+}: {
+  calendar: "PERSONAL" | "ARUS";
+  drive: "PERSONAL" | "ARUS";
+  gmail: "PERSONAL" | "ARUS";
+  accountOptions: { value: "PERSONAL" | "ARUS"; name: string; connected: boolean }[];
+}) {
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <form
+      action={async (formData) => {
+        await updateDashboardAccounts(formData);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }}
+      className="space-y-3"
+    >
+      {[
+        { name: "calendar", label: "Google Calendar", value: calendar },
+        { name: "drive", label: "Google Drive", value: drive },
+        { name: "gmail", label: "Gmail", value: gmail },
+      ].map((field) => (
+        <div key={field.name} className="flex items-center justify-between gap-3">
+          <label className="text-sm text-muted">{field.label}</label>
+          <select
+            name={field.name}
+            defaultValue={field.value}
+            className="bg-surface-2 border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent"
+          >
+            {accountOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.name}
+                {!opt.connected ? " (sin conectar)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+      <button
+        type="submit"
+        className="bg-accent text-background text-sm font-semibold rounded-lg px-4 py-2 hover:brightness-110"
+      >
+        {saved ? "Guardado ✓" : "Guardar"}
       </button>
     </form>
   );

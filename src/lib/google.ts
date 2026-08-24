@@ -71,7 +71,15 @@ export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSON
   });
 
   if (Number(account.expiryDate) < Date.now() + 60_000) {
-    await client.refreshAccessToken();
+    try {
+      await client.refreshAccessToken();
+    } catch (err) {
+      console.error(
+        `[google] token refresh failed for ${label} — reconnect from /ajustes:`,
+        err instanceof Error ? err.message : err
+      );
+      return null;
+    }
   }
 
   return client;

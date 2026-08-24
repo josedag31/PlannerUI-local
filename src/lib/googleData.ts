@@ -162,8 +162,8 @@ export type GmailSummary = {
   latest: { id: string; subject: string; from: string }[];
 };
 
-export async function getGmailSummary(): Promise<GmailSummary | null> {
-  const auth = await getAuthenticatedClient();
+export async function getGmailSummary(label: GoogleAccountLabel = "PERSONAL"): Promise<GmailSummary | null> {
+  const auth = await getAuthenticatedClient(label);
   if (!auth) return null;
 
   try {

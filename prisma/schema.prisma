@@ -120,9 +120,17 @@ model Note {
 }
 
 model AppSettings {
-  id      Int    @id @default(1)
-  appName String @default("Centro de Mando")
-  tagline String @default("Tu base de operaciones para el curso")
+  id                       Int                @id @default(1)
+  appName                  String             @default("Centro de Mando")
+  tagline                  String             @default("Tu base de operaciones para el curso")
+  dashboardCalendarAccount GoogleAccountLabel @default(PERSONAL)
+  dashboardDriveAccount    GoogleAccountLabel @default(PERSONAL)
+  dashboardGmailAccount    GoogleAccountLabel @default(PERSONAL)
+}
+
+model DashboardLayout {
+  id    Int    @id @default(1)
+  order String @default("[]")
 }
 
 model SectionConfig {

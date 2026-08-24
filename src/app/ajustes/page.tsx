@@ -5,6 +5,7 @@ import {
   SectionConfigForm,
   GoogleOAuthConfigForm,
   MicrosoftOAuthConfigForm,
+  DashboardAccountsForm,
 } from "@/components/widgets/SettingsForms";
 import {
   isGoogleConfigured,
@@ -178,6 +179,22 @@ export default async function AjustesPage({
               />
             </div>
           </details>
+        </Card>
+
+        <Card title="Widgets del dashboard" className="lg:col-span-2">
+          <p className="text-xs text-muted mb-3">
+            Elige qué cuenta de Google alimenta cada widget del dashboard principal.
+          </p>
+          <DashboardAccountsForm
+            calendar={settings.dashboardAccounts.calendar}
+            drive={settings.dashboardAccounts.drive}
+            gmail={settings.dashboardAccounts.gmail}
+            accountOptions={GOOGLE_ACCOUNT_LABELS.map(({ value, name }) => ({
+              value,
+              name,
+              connected: accounts.some((a) => a.label === value),
+            }))}
+          />
         </Card>
 
         <Card title="Conexión con Microsoft (Outlook)" className="lg:col-span-2">
