@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Empaquetado de escritorio (Tauri): build de Rust + build de Next copiado
+    // como recurso, ninguno es código fuente del proyecto.
+    "src-tauri/target/**",
+    "src-tauri/resources/**",
   ]),
 ]);
 
