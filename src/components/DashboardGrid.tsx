@@ -79,7 +79,7 @@ export default function DashboardGrid({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {visibleItems.map((item, idx) => (
+        {visibleItems.map((item) => (
           <div
             key={item.key}
             draggable={editMode}
@@ -93,12 +93,31 @@ export default function DashboardGrid({
             onDrop={() => {
               if (editMode) handleDrop(items.findIndex((i) => i.key === item.key));
             }}
-            className={`${WIDGET_SPANS[item.key]} ${
+            className={`relative ${WIDGET_SPANS[item.key]} ${
               editMode
                 ? "cursor-move rounded-2xl ring-1 ring-accent/40 ring-offset-2 ring-offset-background transition-shadow"
                 : ""
             }`}
           >
+            {editMode && (
+              // Punto de agarre fijo: el resto de la tarjeta está lleno de botones/inputs
+              // (checkboxes, "añadir rápido"...) y el navegador no inicia un drag nativo si
+              // el mousedown empieza sobre uno de esos controles — solo desde aquí o del
+              // título (texto plano) se puede arrastrar de forma fiable.
+              <div
+                title="Arrastrar para reordenar"
+                className="absolute top-3 right-3 z-10 flex h-6 w-6 items-center justify-center rounded-md border border-border bg-surface-2 text-muted"
+              >
+                <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+                  <circle cx="5" cy="3" r="1.3" />
+                  <circle cx="11" cy="3" r="1.3" />
+                  <circle cx="5" cy="8" r="1.3" />
+                  <circle cx="11" cy="8" r="1.3" />
+                  <circle cx="5" cy="13" r="1.3" />
+                  <circle cx="11" cy="13" r="1.3" />
+                </svg>
+              </div>
+            )}
             {widgets[item.key]}
           </div>
         ))}
