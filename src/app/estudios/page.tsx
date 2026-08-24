@@ -11,6 +11,8 @@ import CountdownList from "@/components/widgets/CountdownList";
 import { getSettings } from "@/lib/settings";
 import { isMicrosoftConnected } from "@/lib/microsoft";
 import { getUpcomingOutlookEvents } from "@/lib/microsoftData";
+import { isGoogleConnected } from "@/lib/google";
+import { getUpcomingCalendarEvents } from "@/lib/googleData";
 
 export default async function EstudiosPage() {
   const settings = await getSettings();
@@ -18,9 +20,11 @@ export default async function EstudiosPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Estudios sincroniza con Outlook si está conectado; si no, con el Google Personal.
   const outlookConnected = await isMicrosoftConnected();
+  const personalGoogleConnected = !outlookConnected && (await isGoogleConnected("PERSONAL"));
 
-  const [subjects, tasks, exams, goals, notes, outlookEvents] = await Promise.all([
+  const [subjects, tasks, exams, goals, notes, outlookEvents, personalGoogleEvents] = await Promise.all([
     prisma.subject.findMany({ orderBy: { name: "asc" } }),
     prisma.task.findMany({
       where: { section: "STUDY", done: false },
@@ -35,17 +39,26 @@ export default async function EstudiosPage() {
     prisma.goal.findMany({ where: { section: "STUDY", archived: false }, orderBy: { createdAt: "desc" } }),
     prisma.note.findMany({ where: { section: "STUDY" }, orderBy: { updatedAt: "desc" } }),
     outlookConnected ? getUpcomingOutlookEvents(10) : Promise.resolve([]),
+    personalGoogleConnected ? getUpcomingCalendarEvents(10, "PERSONAL") : Promise.resolve([]),
   ]);
 
-  // Exams/tasks already synced to Outlook show up here too — exclude those to avoid duplicates.
-  const syncedIds = new Set(
+  // Exams/tasks already synced show up here too — exclude those to avoid duplicates.
+  const syncedOutlookIds = new Set(
     [...exams, ...tasks]
       .map((item: { outlookEventId?: string | null }) => item.outlookEventId)
       .filter((id): id is string => Boolean(id))
   );
+  const syncedGoogleIds = new Set(
+    [...exams, ...tasks]
+      .map((item: { googleEventId?: string | null }) => item.googleEventId)
+      .filter((id): id is string => Boolean(id))
+  );
   const externalOutlookEvents = outlookEvents
-    .filter((e) => !syncedIds.has(e.id))
+    .filter((e) => !syncedOutlookIds.has(e.id))
     .map((e) => ({ id: `outlook-${e.id}`, title: e.title, date: e.date, section: "STUDY" as const }));
+  const externalPersonalEvents = personalGoogleEvents
+    .filter((e) => !syncedGoogleIds.has(e.id))
+    .map((e) => ({ id: `google-${e.id}`, title: e.title, date: e.date, section: "STUDY" as const }));
 
   return (
     <div className="space-y-6">
@@ -102,13 +115,17 @@ export default async function EstudiosPage() {
           <Card title="Próximo en Outlook" className="lg:col-span-3">
             <CountdownList events={externalOutlookEvents} sectionColors={{ STUDY: section.color }} />
           </Card>
+        ) : personalGoogleConnected ? (
+          <Card title="Próximo en Google Calendar" className="lg:col-span-3">
+            <CountdownList events={externalPersonalEvents} sectionColors={{ STUDY: section.color }} />
+          </Card>
         ) : (
           <p className="text-xs text-muted lg:col-span-3">
-            Conecta tu cuenta de Microsoft en{" "}
+            Conecta tu Google Personal (o tu Microsoft) en{" "}
             <a href="/ajustes" className="text-accent hover:brightness-110">
               Ajustes
             </a>{" "}
-            para ver aquí lo que tengas en tu Outlook Calendar, y para que tus tareas/exámenes se sincronicen ahí.
+            para que tus tareas/exámenes se sincronicen con un calendario y los veas aquí.
           </p>
         )}
       </div>

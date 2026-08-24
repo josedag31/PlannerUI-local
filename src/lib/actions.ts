@@ -23,8 +23,11 @@ function combineDateAndTime(dateRaw: string, timeRaw: string): { date: Date; has
 }
 
 /**
- * Pushes an item to whichever calendar belongs to its section: Estudios →
- * Outlook, ARUS → Google (cuenta ARUS), Personal → Google (cuenta Personal).
+ * Pushes an item to whichever calendar belongs to its section: ARUS → Google
+ * (cuenta ARUS), Estudios/Personal → Google (cuenta Personal) — salvo que
+ * Outlook esté conectado, en cuyo caso Estudios usa Outlook (aparcado por
+ * defecto: la Uni del usuario solo permite registrar la app de Microsoft
+ * desde una cuenta personal, así que de momento no está conectado).
  * Best-effort: never throws, returns nulls if that section's account isn't
  * connected or the call fails.
  */
@@ -32,14 +35,12 @@ async function syncToSectionCalendar(
   section: Section,
   item: { title: string; start: Date; hasTime: boolean; notes?: string | null }
 ): Promise<{ googleEventId: string | null; outlookEventId: string | null }> {
-  if (section === "STUDY") {
-    if (await isMicrosoftConnected()) {
-      return { googleEventId: null, outlookEventId: await createOutlookCalendarEvent(item) };
-    }
-  } else if (section === "ARUS") {
+  if (section === "ARUS") {
     if (await isGoogleConnected("ARUS")) {
       return { googleEventId: await createCalendarEvent(item, "ARUS"), outlookEventId: null };
     }
+  } else if (section === "STUDY" && (await isMicrosoftConnected())) {
+    return { googleEventId: null, outlookEventId: await createOutlookCalendarEvent(item) };
   } else {
     if (await isGoogleConnected("PERSONAL")) {
       return { googleEventId: await createCalendarEvent(item, "PERSONAL"), outlookEventId: null };
