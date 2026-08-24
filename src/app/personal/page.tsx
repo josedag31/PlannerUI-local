@@ -10,6 +10,8 @@ import CountdownList from "@/components/widgets/CountdownList";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
 import NotesBoard from "@/components/widgets/NotesBoard";
 import { getSettings } from "@/lib/settings";
+import { isGoogleConnected } from "@/lib/google";
+import { getUpcomingCalendarEvents } from "@/lib/googleData";
 
 export default async function PersonalPage() {
   const settings = await getSettings();
@@ -17,7 +19,9 @@ export default async function PersonalPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [tasks, habits, goals, events, notes] = await Promise.all([
+  const personalGoogleConnected = await isGoogleConnected("PERSONAL");
+
+  const [tasks, habits, goals, events, notes, personalGoogleEvents] = await Promise.all([
     prisma.task.findMany({
       where: { section: "PERSONAL", done: false },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -29,7 +33,13 @@ export default async function PersonalPage() {
     prisma.goal.findMany({ where: { section: "PERSONAL", archived: false }, orderBy: { createdAt: "desc" } }),
     prisma.eventCountdown.findMany({ where: { section: "PERSONAL", date: { gte: today } }, orderBy: { date: "asc" } }),
     prisma.note.findMany({ where: { section: "PERSONAL" }, orderBy: { updatedAt: "desc" } }),
+    personalGoogleConnected ? getUpcomingCalendarEvents(10, "PERSONAL") : Promise.resolve([]),
   ]);
+
+  const syncedIds = new Set(events.map((e) => e.googleEventId).filter((id): id is string => Boolean(id)));
+  const externalPersonalEvents = personalGoogleEvents
+    .filter((e) => !syncedIds.has(e.id))
+    .map((e) => ({ id: `google-${e.id}`, title: e.title, date: e.date, section: "PERSONAL" as const }));
 
   return (
     <div className="space-y-6">
@@ -45,7 +55,12 @@ export default async function PersonalPage() {
         </Card>
 
         <Card title="Eventos">
-          <CountdownList events={events} sectionColors={{ PERSONAL: section.color }} />
+          <CountdownList
+            events={[...events, ...externalPersonalEvents].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            )}
+            sectionColors={{ PERSONAL: section.color }}
+          />
           <QuickAddEvent section="PERSONAL" />
         </Card>
 

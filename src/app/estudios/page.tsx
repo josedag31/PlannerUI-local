@@ -7,7 +7,10 @@ import QuickAddExam from "@/components/widgets/QuickAddExam";
 import GoalList from "@/components/widgets/GoalList";
 import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import NotesBoard from "@/components/widgets/NotesBoard";
+import CountdownList from "@/components/widgets/CountdownList";
 import { getSettings } from "@/lib/settings";
+import { isMicrosoftConnected } from "@/lib/microsoft";
+import { getUpcomingOutlookEvents } from "@/lib/microsoftData";
 
 export default async function EstudiosPage() {
   const settings = await getSettings();
@@ -15,7 +18,9 @@ export default async function EstudiosPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [subjects, tasks, exams, goals, notes] = await Promise.all([
+  const outlookConnected = await isMicrosoftConnected();
+
+  const [subjects, tasks, exams, goals, notes, outlookEvents] = await Promise.all([
     prisma.subject.findMany({ orderBy: { name: "asc" } }),
     prisma.task.findMany({
       where: { section: "STUDY", done: false },
@@ -29,7 +34,18 @@ export default async function EstudiosPage() {
     }),
     prisma.goal.findMany({ where: { section: "STUDY", archived: false }, orderBy: { createdAt: "desc" } }),
     prisma.note.findMany({ where: { section: "STUDY" }, orderBy: { updatedAt: "desc" } }),
+    outlookConnected ? getUpcomingOutlookEvents(10) : Promise.resolve([]),
   ]);
+
+  // Exams/tasks already synced to Outlook show up here too — exclude those to avoid duplicates.
+  const syncedIds = new Set(
+    [...exams, ...tasks]
+      .map((item: { outlookEventId?: string | null }) => item.outlookEventId)
+      .filter((id): id is string => Boolean(id))
+  );
+  const externalOutlookEvents = outlookEvents
+    .filter((e) => !syncedIds.has(e.id))
+    .map((e) => ({ id: `outlook-${e.id}`, title: e.title, date: e.date, section: "STUDY" as const }));
 
   return (
     <div className="space-y-6">
@@ -81,6 +97,20 @@ export default async function EstudiosPage() {
         <Card title="Notas y apuntes" className="lg:col-span-3">
           <NotesBoard notes={notes} section="STUDY" />
         </Card>
+
+        {outlookConnected ? (
+          <Card title="Próximo en Outlook" className="lg:col-span-3">
+            <CountdownList events={externalOutlookEvents} sectionColors={{ STUDY: section.color }} />
+          </Card>
+        ) : (
+          <p className="text-xs text-muted lg:col-span-3">
+            Conecta tu cuenta de Microsoft en{" "}
+            <a href="/ajustes" className="text-accent hover:brightness-110">
+              Ajustes
+            </a>{" "}
+            para ver aquí lo que tengas en tu Outlook Calendar, y para que tus tareas/exámenes se sincronicen ahí.
+          </p>
+        )}
       </div>
     </div>
   );

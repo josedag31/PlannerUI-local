@@ -40,9 +40,10 @@ model Task {
   doneAt        DateTime?
   subjectId     String?
   subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  googleEventId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  googleEventId   String?
+  outlookEventId  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model Habit {
@@ -88,22 +89,24 @@ model Subject {
 }
 
 model Exam {
-  id            String   @id @default(cuid())
-  subjectId     String
-  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  date          DateTime
-  notes         String?
-  googleEventId String?
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  subjectId      String
+  subject        Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date           DateTime
+  notes          String?
+  googleEventId  String?
+  outlookEventId String?
+  createdAt      DateTime @default(now())
 }
 
 model EventCountdown {
-  id            String   @id @default(cuid())
-  title         String
-  section       Section
-  date          DateTime
-  googleEventId String?
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  title          String
+  section        Section
+  date           DateTime
+  googleEventId  String?
+  outlookEventId String?
+  createdAt      DateTime @default(now())
 }
 
 model Note {

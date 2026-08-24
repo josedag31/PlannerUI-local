@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma";
 
-export const MICROSOFT_SCOPES = ["openid", "profile", "email", "offline_access", "Mail.Read", "User.Read"];
+export const MICROSOFT_SCOPES = [
+  "openid",
+  "profile",
+  "email",
+  "offline_access",
+  "Mail.Read",
+  "User.Read",
+  "Calendars.ReadWrite",
+];
 export const DEFAULT_MICROSOFT_REDIRECT_URI = "http://localhost:3000/api/microsoft/callback";
 export const DEFAULT_MICROSOFT_TENANT = "common";
 

@@ -13,18 +13,21 @@ export type GoogleCalendarEvent = {
  * null (never throws) if Google isn't connected or the API call fails, so
  * callers can save locally regardless of calendar sync succeeding.
  */
-export async function createCalendarEvent(input: {
-  title: string;
-  start: Date;
-  hasTime: boolean;
-  notes?: string | null;
-}): Promise<string | null> {
-  const auth = await getAuthenticatedClient();
+export async function createCalendarEvent(
+  input: {
+    title: string;
+    start: Date;
+    hasTime: boolean;
+    notes?: string | null;
+  },
+  label: GoogleAccountLabel = "PERSONAL"
+): Promise<string | null> {
+  const auth = await getAuthenticatedClient(label);
   if (!auth) return null;
 
   try {
     const calendar = google.calendar({ version: "v3", auth });
-    const end = new Date(input.start.getTime() + (input.hasTime ? 60 * 60 * 1000 : 0));
+    const end = new Date(input.start.getTime() + (input.hasTime ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000));
 
     const { data } = await calendar.events.insert({
       calendarId: "primary",
@@ -36,7 +39,7 @@ export async function createCalendarEvent(input: {
           : { date: input.start.toISOString().slice(0, 10) },
         end: input.hasTime
           ? { dateTime: end.toISOString() }
-          : { date: input.start.toISOString().slice(0, 10) },
+          : { date: end.toISOString().slice(0, 10) },
       },
     });
 
@@ -47,8 +50,8 @@ export async function createCalendarEvent(input: {
   }
 }
 
-export async function deleteCalendarEvent(eventId: string): Promise<void> {
-  const auth = await getAuthenticatedClient();
+export async function deleteCalendarEvent(eventId: string, label: GoogleAccountLabel = "PERSONAL"): Promise<void> {
+  const auth = await getAuthenticatedClient(label);
   if (!auth) return;
 
   try {

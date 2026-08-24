@@ -10,7 +10,7 @@ import NotesBoard from "@/components/widgets/NotesBoard";
 import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected } from "@/lib/google";
-import { getRecentDriveFiles } from "@/lib/googleData";
+import { getRecentDriveFiles, getUpcomingCalendarEvents } from "@/lib/googleData";
 
 export default async function ArusPage() {
   const settings = await getSettings();
@@ -20,7 +20,7 @@ export default async function ArusPage() {
 
   const arusGoogleConnected = await isGoogleConnected("ARUS");
 
-  const [tasks, goals, events, notes, driveFiles] = await Promise.all([
+  const [tasks, goals, events, notes, driveFiles, arusGoogleEvents] = await Promise.all([
     prisma.task.findMany({
       where: { section: "ARUS", done: false },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -29,7 +29,14 @@ export default async function ArusPage() {
     prisma.eventCountdown.findMany({ where: { section: "ARUS", date: { gte: today } }, orderBy: { date: "asc" } }),
     prisma.note.findMany({ where: { section: "ARUS" }, orderBy: { updatedAt: "desc" } }),
     arusGoogleConnected ? getRecentDriveFiles(10, "ARUS") : Promise.resolve([]),
+    arusGoogleConnected ? getUpcomingCalendarEvents(10, "ARUS") : Promise.resolve([]),
   ]);
+
+  // Avoid showing the same item twice: once as a local event, once read back from Calendar.
+  const syncedIds = new Set(events.map((e) => e.googleEventId).filter((id): id is string => Boolean(id)));
+  const externalArusEvents = arusGoogleEvents
+    .filter((e) => !syncedIds.has(e.id))
+    .map((e) => ({ id: `google-${e.id}`, title: e.title, date: e.date, section: "ARUS" as const }));
 
   return (
     <div className="space-y-6">
@@ -45,7 +52,12 @@ export default async function ArusPage() {
         </Card>
 
         <Card title="Reuniones y eventos">
-          <CountdownList events={events} sectionColors={{ ARUS: section.color }} />
+          <CountdownList
+            events={[...events, ...externalArusEvents].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            )}
+            sectionColors={{ ARUS: section.color }}
+          />
           <QuickAddEvent section="ARUS" />
         </Card>
 

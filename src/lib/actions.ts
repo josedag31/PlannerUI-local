@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { Priority, Section } from "@/generated/prisma/client";
 import { isGoogleConnected } from "@/lib/google";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/googleData";
+import { isMicrosoftConnected } from "@/lib/microsoft";
+import { createOutlookCalendarEvent, deleteOutlookCalendarEvent } from "@/lib/microsoftData";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -18,6 +20,45 @@ function combineDateAndTime(dateRaw: string, timeRaw: string): { date: Date; has
   const hasTime = Boolean(timeRaw);
   const date = new Date(hasTime ? `${dateRaw}T${timeRaw}` : `${dateRaw}T00:00`);
   return { date, hasTime };
+}
+
+/**
+ * Pushes an item to whichever calendar belongs to its section: Estudios →
+ * Outlook, ARUS → Google (cuenta ARUS), Personal → Google (cuenta Personal).
+ * Best-effort: never throws, returns nulls if that section's account isn't
+ * connected or the call fails.
+ */
+async function syncToSectionCalendar(
+  section: Section,
+  item: { title: string; start: Date; hasTime: boolean; notes?: string | null }
+): Promise<{ googleEventId: string | null; outlookEventId: string | null }> {
+  if (section === "STUDY") {
+    if (await isMicrosoftConnected()) {
+      return { googleEventId: null, outlookEventId: await createOutlookCalendarEvent(item) };
+    }
+  } else if (section === "ARUS") {
+    if (await isGoogleConnected("ARUS")) {
+      return { googleEventId: await createCalendarEvent(item, "ARUS"), outlookEventId: null };
+    }
+  } else {
+    if (await isGoogleConnected("PERSONAL")) {
+      return { googleEventId: await createCalendarEvent(item, "PERSONAL"), outlookEventId: null };
+    }
+  }
+  return { googleEventId: null, outlookEventId: null };
+}
+
+async function deleteSectionCalendarEvent(
+  section: Section,
+  googleEventId: string | null,
+  outlookEventId: string | null
+) {
+  if (googleEventId) {
+    await deleteCalendarEvent(googleEventId, section === "ARUS" ? "ARUS" : "PERSONAL");
+  }
+  if (outlookEventId) {
+    await deleteOutlookCalendarEvent(outlookEventId);
+  }
 }
 
 // ---------- Tasks ----------
@@ -34,12 +75,13 @@ export async function createTask(formData: FormData) {
   const combined = combineDateAndTime(dueDateRaw, dueTimeRaw);
 
   let googleEventId: string | null = null;
-  if (combined && (await isGoogleConnected())) {
-    googleEventId = await createCalendarEvent({
+  let outlookEventId: string | null = null;
+  if (combined) {
+    ({ googleEventId, outlookEventId } = await syncToSectionCalendar(section, {
       title,
       start: combined.date,
       hasTime: combined.hasTime,
-    });
+    }));
   }
 
   await prisma.task.create({
@@ -50,6 +92,7 @@ export async function createTask(formData: FormData) {
       dueDate: combined?.date ?? null,
       subjectId,
       googleEventId,
+      outlookEventId,
     },
   });
   revalidatePath("/");
@@ -64,9 +107,9 @@ export async function toggleTask(id: string, done: boolean) {
     data: { done, doneAt: done ? new Date() : null },
   });
 
-  if (done && task.googleEventId) {
-    await deleteCalendarEvent(task.googleEventId);
-    await prisma.task.update({ where: { id }, data: { googleEventId: null } });
+  if (done && (task.googleEventId || task.outlookEventId)) {
+    await deleteSectionCalendarEvent(task.section, task.googleEventId, task.outlookEventId);
+    await prisma.task.update({ where: { id }, data: { googleEventId: null, outlookEventId: null } });
   }
 
   revalidatePath("/");
@@ -77,7 +120,7 @@ export async function toggleTask(id: string, done: boolean) {
 
 export async function deleteTask(id: string) {
   const task = await prisma.task.delete({ where: { id } });
-  if (task.googleEventId) await deleteCalendarEvent(task.googleEventId);
+  await deleteSectionCalendarEvent(task.section, task.googleEventId, task.outlookEventId);
   revalidatePath("/");
   revalidatePath("/estudios");
   revalidatePath("/arus");
@@ -164,17 +207,14 @@ export async function createExam(formData: FormData) {
 
   const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
 
-  let googleEventId: string | null = null;
-  if (await isGoogleConnected()) {
-    googleEventId = await createCalendarEvent({
-      title: `Examen ${subject?.name ?? ""}`.trim(),
-      start: combined.date,
-      hasTime: combined.hasTime,
-      notes,
-    });
-  }
+  const { googleEventId, outlookEventId } = await syncToSectionCalendar(subject?.section ?? "STUDY", {
+    title: `Examen ${subject?.name ?? ""}`.trim(),
+    start: combined.date,
+    hasTime: combined.hasTime,
+    notes,
+  });
 
-  await prisma.exam.create({ data: { subjectId, date: combined.date, notes, googleEventId } });
+  await prisma.exam.create({ data: { subjectId, date: combined.date, notes, googleEventId, outlookEventId } });
   revalidatePath("/estudios");
   revalidatePath("/");
 }
@@ -191,17 +231,14 @@ export async function createEvent(formData: FormData) {
   const combined = combineDateAndTime(dateRaw, timeRaw);
   if (!combined) return;
 
-  let googleEventId: string | null = null;
-  if (await isGoogleConnected()) {
-    googleEventId = await createCalendarEvent({
-      title,
-      start: combined.date,
-      hasTime: combined.hasTime,
-    });
-  }
+  const { googleEventId, outlookEventId } = await syncToSectionCalendar(section, {
+    title,
+    start: combined.date,
+    hasTime: combined.hasTime,
+  });
 
   await prisma.eventCountdown.create({
-    data: { title, date: combined.date, section, googleEventId },
+    data: { title, date: combined.date, section, googleEventId, outlookEventId },
   });
   revalidatePath("/");
   revalidatePath("/estudios");
