@@ -120,3 +120,14 @@ model SectionConfig {
   color String
   icon  String
 }
+
+model GoogleAccount {
+  id           Int      @id @default(1)
+  email        String?
+  accessToken  String
+  refreshToken String
+  expiryDate   BigInt
+  scope        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

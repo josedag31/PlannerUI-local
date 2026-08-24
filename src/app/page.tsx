@@ -10,9 +10,18 @@ import QuickAddHabit from "@/components/widgets/QuickAddHabit";
 import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
 import { getSettings } from "@/lib/settings";
+import { isGoogleConnected } from "@/lib/google";
+import { getUpcomingCalendarEvents, getRecentDriveFiles, getGmailSummary } from "@/lib/googleData";
+import GoogleCalendarWidget from "@/components/widgets/GoogleCalendarWidget";
+import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
+import GmailWidget from "@/components/widgets/GmailWidget";
 
 export default async function DashboardPage() {
   const settings = await getSettings();
+  const googleConnected = await isGoogleConnected();
+  const [googleEvents, driveFiles, gmailSummary] = googleConnected
+    ? await Promise.all([getUpcomingCalendarEvents(), getRecentDriveFiles(), getGmailSummary()])
+    : [[], [], null];
   const sectionColors = {
     STUDY: settings.sections.STUDY.color,
     ARUS: settings.sections.ARUS.color,
@@ -100,7 +109,33 @@ export default async function DashboardPage() {
           <GoalList goals={goals} />
           <QuickAddGoal section="PERSONAL" />
         </Card>
+
+        {googleConnected && (
+          <>
+            <Card title="Google Calendar">
+              <GoogleCalendarWidget events={googleEvents} />
+            </Card>
+
+            <Card title="Google Drive">
+              <GoogleDriveWidget files={driveFiles} />
+            </Card>
+
+            <Card title="Gmail">
+              <GmailWidget summary={gmailSummary} />
+            </Card>
+          </>
+        )}
       </div>
+
+      {!googleConnected && (
+        <p className="text-xs text-muted">
+          Conecta tu cuenta de Google en{" "}
+          <a href="/ajustes" className="text-accent hover:brightness-110">
+            Ajustes
+          </a>{" "}
+          para ver aquí tu Calendar, Drive y Gmail.
+        </p>
+      )}
     </div>
   );
 }
