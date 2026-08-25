@@ -8,6 +8,7 @@ import {
   updateMicrosoftOAuthConfig,
   updateDashboardAccounts,
 } from "@/lib/actions";
+import DriveFolderPicker from "@/components/widgets/DriveFolderPicker";
 
 export function AppSettingsForm({ appName, tagline }: { appName: string; tagline: string }) {
   const [saved, setSaved] = useState(false);
@@ -264,17 +265,22 @@ export function DashboardAccountsForm({
   drive,
   gmail,
   driveFolderId,
-  driveFolders,
+  driveFolderName,
+  driveConnected,
   accountOptions,
 }: {
   calendar: "PERSONAL" | "ARUS";
   drive: "PERSONAL" | "ARUS";
   gmail: "PERSONAL" | "ARUS";
   driveFolderId: string | null;
-  driveFolders: { id: string; name: string }[];
+  driveFolderName: string | null;
+  driveConnected: boolean;
   accountOptions: { value: "PERSONAL" | "ARUS"; name: string; connected: boolean }[];
 }) {
   const [saved, setSaved] = useState(false);
+  const [folderId, setFolderId] = useState(driveFolderId);
+  const [folderName, setFolderName] = useState(driveFolderName);
+  const [picking, setPicking] = useState(false);
 
   return (
     <form
@@ -307,26 +313,38 @@ export function DashboardAccountsForm({
         </div>
       ))}
 
-      <div className="flex items-center justify-between gap-3">
-        <label className="text-sm text-muted">Carpeta de Drive</label>
-        <select
-          name="driveFolderId"
-          defaultValue={driveFolderId ?? ""}
-          className="bg-surface-2 border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent max-w-[60%]"
-        >
-          <option value="">Todo el Drive (más reciente)</option>
-          {driveFolders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name}
-            </option>
-          ))}
-        </select>
+      <input type="hidden" name="driveFolderId" value={folderId ?? ""} />
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm text-muted">Carpeta de Drive</label>
+          <div className="flex items-center gap-2">
+            <span className="text-sm truncate max-w-[180px]">{folderName ?? "Todo el Drive (más reciente)"}</span>
+            <button
+              type="button"
+              disabled={!driveConnected}
+              onClick={() => setPicking((v) => !v)}
+              className="text-xs font-semibold text-accent hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {picking ? "Cerrar" : "Cambiar"}
+            </button>
+          </div>
+        </div>
+        {!driveConnected && (
+          <p className="text-xs text-muted">Conecta y guarda la cuenta de Drive de arriba para poder elegir una carpeta.</p>
+        )}
+        {picking && (
+          <DriveFolderPicker
+            label={drive}
+            onSelect={(folder) => {
+              setFolderId(folder.id || null);
+              setFolderName(folder.name || null);
+              setPicking(false);
+            }}
+            onClose={() => setPicking(false)}
+          />
+        )}
       </div>
-      {driveFolders.length === 0 && (
-        <p className="text-xs text-muted">
-          Guarda la cuenta de Drive de arriba y conéctala para poder elegir una carpeta concreta.
-        </p>
-      )}
 
       <button
         type="submit"

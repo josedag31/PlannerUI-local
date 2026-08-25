@@ -140,15 +140,23 @@ export type GoogleDriveFolder = {
   name: string;
 };
 
-/** Lists the user's Drive folders (for the "elegir carpeta" picker in Ajustes). */
-export async function listDriveFolders(label: GoogleAccountLabel = "PERSONAL"): Promise<GoogleDriveFolder[]> {
+/**
+ * Carpetas hijas directas de `parentId` (o de la raíz de Mi unidad si se omite)
+ * — para navegar el picker de Ajustes carpeta a carpeta, como en el propio
+ * Drive. A diferencia de listar TODAS las carpetas de golpe, esto no se topa
+ * con ningún límite en un Drive grande: cada nivel solo trae sus hijas.
+ */
+export async function listDriveFolderChildren(
+  label: GoogleAccountLabel = "PERSONAL",
+  parentId = "root"
+): Promise<GoogleDriveFolder[]> {
   const auth = await getAuthenticatedClient(label);
   if (!auth) return [];
 
   try {
     const drive = google.drive({ version: "v3", auth });
     const { data } = await drive.files.list({
-      q: "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      q: `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
       pageSize: 200,
       orderBy: "name",
       fields: "files(id, name)",
@@ -158,6 +166,49 @@ export async function listDriveFolders(label: GoogleAccountLabel = "PERSONAL"): 
   } catch (err) {
     console.error("[google] request failed:", err instanceof Error ? err.message : err);
     return [];
+  }
+}
+
+/** Busca carpetas por nombre en todo el Drive (no solo el nivel actual). */
+export async function searchDriveFolders(
+  query: string,
+  label: GoogleAccountLabel = "PERSONAL",
+  maxResults = 25
+): Promise<GoogleDriveFolder[]> {
+  const auth = await getAuthenticatedClient(label);
+  if (!auth || !query.trim()) return [];
+
+  try {
+    const drive = google.drive({ version: "v3", auth });
+    const { data } = await drive.files.list({
+      q: `mimeType = 'application/vnd.google-apps.folder' and trashed = false and name contains '${query.replace(/'/g, "")}'`,
+      pageSize: maxResults,
+      orderBy: "name",
+      fields: "files(id, name)",
+    });
+
+    return (data.files ?? []).map((f) => ({ id: f.id ?? "", name: f.name ?? "(sin nombre)" }));
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
+/** Nombre de una carpeta concreta (para mostrar la carpeta ya elegida en Ajustes). */
+export async function getDriveFolderName(
+  folderId: string,
+  label: GoogleAccountLabel = "PERSONAL"
+): Promise<string | null> {
+  const auth = await getAuthenticatedClient(label);
+  if (!auth) return null;
+
+  try {
+    const drive = google.drive({ version: "v3", auth });
+    const { data } = await drive.files.get({ fileId: folderId, fields: "name" });
+    return data.name ?? null;
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
+    return null;
   }
 }
 
