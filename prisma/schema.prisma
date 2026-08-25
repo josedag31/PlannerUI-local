@@ -127,6 +127,7 @@ model AppSettings {
   dashboardCalendarAccount GoogleAccountLabel @default(PERSONAL)
   dashboardDriveAccount    GoogleAccountLabel @default(PERSONAL)
   dashboardGmailAccount    GoogleAccountLabel @default(PERSONAL)
+  dashboardDriveFolderId   String?
 }
 
 model DashboardLayout {

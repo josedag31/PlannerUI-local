@@ -106,14 +106,17 @@ export type GoogleDriveFile = {
 
 export async function getRecentDriveFiles(
   maxResults = 8,
-  label: GoogleAccountLabel = "PERSONAL"
+  label: GoogleAccountLabel = "PERSONAL",
+  folderId?: string | null
 ): Promise<GoogleDriveFile[]> {
   const auth = await getAuthenticatedClient(label);
   if (!auth) return [];
 
   try {
     const drive = google.drive({ version: "v3", auth });
+    const q = folderId ? `'${folderId}' in parents and trashed = false` : "trashed = false";
     const { data } = await drive.files.list({
+      q,
       pageSize: maxResults,
       orderBy: "modifiedTime desc",
       fields: "files(id, name, webViewLink, modifiedTime, iconLink)",
@@ -126,6 +129,32 @@ export async function getRecentDriveFiles(
       modifiedTime: f.modifiedTime ?? null,
       iconLink: f.iconLink ?? null,
     }));
+  } catch (err) {
+    console.error("[google] request failed:", err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
+export type GoogleDriveFolder = {
+  id: string;
+  name: string;
+};
+
+/** Lists the user's Drive folders (for the "elegir carpeta" picker in Ajustes). */
+export async function listDriveFolders(label: GoogleAccountLabel = "PERSONAL"): Promise<GoogleDriveFolder[]> {
+  const auth = await getAuthenticatedClient(label);
+  if (!auth) return [];
+
+  try {
+    const drive = google.drive({ version: "v3", auth });
+    const { data } = await drive.files.list({
+      q: "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      pageSize: 200,
+      orderBy: "name",
+      fields: "files(id, name)",
+    });
+
+    return (data.files ?? []).map((f) => ({ id: f.id ?? "", name: f.name ?? "(sin nombre)" }));
   } catch (err) {
     console.error("[google] request failed:", err instanceof Error ? err.message : err);
     return [];

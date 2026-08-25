@@ -59,4 +59,5 @@ skills-lock.json
 /src-tauri/resources/app
 /src-tauri/resources/node
 /src-tauri/resources/template.db
+/src-tauri/resources/migrations
 /src-tauri/gen

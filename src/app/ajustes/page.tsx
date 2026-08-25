@@ -14,6 +14,7 @@ import {
   DEFAULT_REDIRECT_URI,
   GOOGLE_ACCOUNT_LABELS,
 } from "@/lib/google";
+import { listDriveFolders } from "@/lib/googleData";
 import {
   isMicrosoftConfigured,
   isMicrosoftConnected,
@@ -93,6 +94,10 @@ export default async function AjustesPage({
   const configured = await isGoogleConfigured();
   const accounts = await getConnectedGoogleAccounts();
   const oauthConfig = await getGoogleOAuthConfig();
+  const driveAccountConnected = accounts.some((a) => a.label === settings.dashboardAccounts.drive);
+  const driveFolders = driveAccountConnected
+    ? await listDriveFolders(settings.dashboardAccounts.drive)
+    : [];
 
   const msConfigured = await isMicrosoftConfigured();
   const msConnected = await isMicrosoftConnected();
@@ -189,6 +194,8 @@ export default async function AjustesPage({
             calendar={settings.dashboardAccounts.calendar}
             drive={settings.dashboardAccounts.drive}
             gmail={settings.dashboardAccounts.gmail}
+            driveFolderId={settings.driveFolderId}
+            driveFolders={driveFolders}
             accountOptions={GOOGLE_ACCOUNT_LABELS.map(({ value, name }) => ({
               value,
               name,

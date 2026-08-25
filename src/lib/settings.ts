@@ -18,6 +18,7 @@ export type ResolvedSettings = {
     drive: GoogleAccountLabel;
     gmail: GoogleAccountLabel;
   };
+  driveFolderId: string | null;
 };
 
 export async function getSettings(): Promise<ResolvedSettings> {
@@ -53,5 +54,6 @@ export async function getSettings(): Promise<ResolvedSettings> {
       drive: app.dashboardDriveAccount,
       gmail: app.dashboardGmailAccount,
     },
+    driveFolderId: app.dashboardDriveFolderId,
   };
 }

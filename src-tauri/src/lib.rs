@@ -64,6 +64,17 @@ pub fn run() {
             let server_js = resource_dir.join("app").join("server.js");
             let database_url = format!("file:{}", db_path.display());
 
+            // Aplica migraciones pendientes contra la BBDD del usuario (que puede
+            // venir de una versión anterior de la app). template.db ya sale
+            // migrada del build, así que en el caso normal esto no hace nada.
+            let migrate_script = resource_dir.join("app").join("migrate-runtime.cjs");
+            let migrations_dir = resource_dir.join("migrations");
+            let mut migrate_command = Command::new(&node_exe);
+            migrate_command.arg(&migrate_script).arg(&db_path).arg(&migrations_dir);
+            #[cfg(windows)]
+            migrate_command.creation_flags(CREATE_NO_WINDOW);
+            let migrate_output = migrate_command.output();
+
             let log_path = app_data_dir.join("server.log");
             let stdout_log = fs::File::create(&log_path)?;
             let stderr_log = stdout_log.try_clone()?;
@@ -71,13 +82,19 @@ pub fn run() {
             fs::write(
                 app_data_dir.join("launcher-debug.log"),
                 format!(
-                    "resource_dir={}\nnode_exe={} exists={}\nserver_js={} exists={}\ncwd={}\n",
+                    "resource_dir={}\nnode_exe={} exists={}\nserver_js={} exists={}\ncwd={}\nmigrate={:?}\n",
                     resource_dir.display(),
                     node_exe.display(),
                     node_exe.exists(),
                     server_js.display(),
                     server_js.exists(),
                     resource_dir.join("app").display(),
+                    migrate_output.map(|o| format!(
+                        "status={} stdout={} stderr={}",
+                        o.status,
+                        String::from_utf8_lossy(&o.stdout),
+                        String::from_utf8_lossy(&o.stderr)
+                    )),
                 ),
             )?;
 

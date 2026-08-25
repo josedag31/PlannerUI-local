@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Locked In Planner",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "identifier": "app.lockedinplanner.desktop",
   "build": {
     "frontendDist": "http://localhost:3000",
@@ -40,7 +40,8 @@
     "resources": {
       "resources/app": "app",
       "resources/node/node.exe": "node/node.exe",
-      "resources/template.db": "template.db"
+      "resources/template.db": "template.db",
+      "resources/migrations": "migrations"
     },
     "android": {
       "debugApplicationIdSuffix": ".debug"

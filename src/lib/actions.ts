@@ -392,6 +392,7 @@ export async function updateDashboardAccounts(formData: FormData) {
   const calendar = String(formData.get("calendar") ?? "PERSONAL") as GoogleAccountLabel;
   const drive = String(formData.get("drive") ?? "PERSONAL") as GoogleAccountLabel;
   const gmail = String(formData.get("gmail") ?? "PERSONAL") as GoogleAccountLabel;
+  const driveFolderId = String(formData.get("driveFolderId") ?? "").trim() || null;
 
   await prisma.appSettings.upsert({
     where: { id: 1 },
@@ -399,12 +400,14 @@ export async function updateDashboardAccounts(formData: FormData) {
       dashboardCalendarAccount: calendar,
       dashboardDriveAccount: drive,
       dashboardGmailAccount: gmail,
+      dashboardDriveFolderId: driveFolderId,
     },
     create: {
       id: 1,
       dashboardCalendarAccount: calendar,
       dashboardDriveAccount: drive,
       dashboardGmailAccount: gmail,
+      dashboardDriveFolderId: driveFolderId,
     },
   });
   revalidatePath("/");

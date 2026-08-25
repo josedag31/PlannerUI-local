@@ -15,7 +15,7 @@ const nodeExe = join(nodeDir, "node.exe");
 
 const NODE_VERSION = process.version.replace(/^v/, "");
 
-console.log("[1/3] Copiando build standalone de Next.js...");
+console.log("[1/4] Copiando build standalone de Next.js...");
 const standaloneDir = join(root, ".next", "standalone");
 if (!existsSync(standaloneDir)) {
   throw new Error("Falta .next/standalone — ejecuta `npm run build` primero.");
@@ -32,7 +32,14 @@ for (const envFile of [".env", ".env.local", ".env.production", ".env.production
   rmSync(join(appDir, envFile), { force: true });
 }
 
-console.log("[2/3] Verificando node.exe empaquetado...");
+cpSync(join(root, "scripts", "migrate-runtime.cjs"), join(appDir, "migrate-runtime.cjs"));
+
+console.log("[1.5/4] Copiando migraciones de Prisma (para BBDDs ya existentes)...");
+const migrationsResourceDir = join(resourcesDir, "migrations");
+rmSync(migrationsResourceDir, { recursive: true, force: true });
+cpSync(join(root, "prisma", "migrations"), migrationsResourceDir, { recursive: true });
+
+console.log("[2/4] Verificando node.exe empaquetado...");
 if (!existsSync(nodeExe)) {
   console.log(`  node.exe no encontrado, descargando v${NODE_VERSION}...`);
   const zipUrl = `https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-x64.zip`;
@@ -53,7 +60,7 @@ if (!existsSync(nodeExe)) {
   console.log("  ya presente, se reutiliza.");
 }
 
-console.log("[3/3] Generando BBDD plantilla (migraciones aplicadas, sin datos)...");
+console.log("[4/4] Generando BBDD plantilla (migraciones aplicadas, sin datos)...");
 const templateDb = join(resourcesDir, "template.db");
 rmSync(templateDb, { force: true });
 const npxArgs = ["prisma", "migrate", "deploy"];

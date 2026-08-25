@@ -263,11 +263,15 @@ export function DashboardAccountsForm({
   calendar,
   drive,
   gmail,
+  driveFolderId,
+  driveFolders,
   accountOptions,
 }: {
   calendar: "PERSONAL" | "ARUS";
   drive: "PERSONAL" | "ARUS";
   gmail: "PERSONAL" | "ARUS";
+  driveFolderId: string | null;
+  driveFolders: { id: string; name: string }[];
   accountOptions: { value: "PERSONAL" | "ARUS"; name: string; connected: boolean }[];
 }) {
   const [saved, setSaved] = useState(false);
@@ -302,6 +306,28 @@ export function DashboardAccountsForm({
           </select>
         </div>
       ))}
+
+      <div className="flex items-center justify-between gap-3">
+        <label className="text-sm text-muted">Carpeta de Drive</label>
+        <select
+          name="driveFolderId"
+          defaultValue={driveFolderId ?? ""}
+          className="bg-surface-2 border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent max-w-[60%]"
+        >
+          <option value="">Todo el Drive (más reciente)</option>
+          {driveFolders.map((folder) => (
+            <option key={folder.id} value={folder.id}>
+              {folder.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {driveFolders.length === 0 && (
+        <p className="text-xs text-muted">
+          Guarda la cuenta de Drive de arriba y conéctala para poder elegir una carpeta concreta.
+        </p>
+      )}
+
       <button
         type="submit"
         className="bg-accent text-background text-sm font-semibold rounded-lg px-4 py-2 hover:brightness-110"

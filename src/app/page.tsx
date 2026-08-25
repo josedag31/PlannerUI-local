@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
   const [googleEvents, driveFiles, gmailSummary] = await Promise.all([
     calendarConnected ? getUpcomingCalendarEvents(20, calendarAccount) : Promise.resolve([]),
-    driveConnected ? getRecentDriveFiles(8, driveAccount) : Promise.resolve([]),
+    driveConnected ? getRecentDriveFiles(8, driveAccount, settings.driveFolderId) : Promise.resolve([]),
     gmailConnected ? getGmailSummary(gmailAccount) : Promise.resolve(null),
   ]);
 
