@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Locked In Planner",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "app.lockedinplanner.desktop",
   "build": {
     "frontendDist": "http://localhost:3000",
@@ -19,7 +19,8 @@
         "resizable": true,
         "fullscreen": false,
         "visible": false,
-        "url": "about:blank"
+        "url": "about:blank",
+        "dragDropEnabled": false
       }
     ],
     "security": {

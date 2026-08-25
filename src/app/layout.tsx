@@ -4,6 +4,15 @@ import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import { getSettings } from "@/lib/settings";
 
+// La app entera lee de una BBDD SQLite local mutable (tareas, ajustes,
+// cuentas de Google...) sin ningún beneficio de cachear/pre-renderizar
+// nada: no hay CDN ni usuarios concurrentes, solo un lector local. Sin
+// esto, `next build` marca páginas como esta (o el dashboard) como
+// estáticas y las "congela" con los datos que hubiera en el momento de
+// compilar — el `.exe` empaquetado serviría para siempre esa foto fija en
+// vez de leer la BBDD real en cada visita.
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
