@@ -33,11 +33,29 @@ export async function getOAuthClient() {
 
 export async function isGoogleConnected(label: GoogleAccountLabel = "PERSONAL") {
   const account = await prisma.googleAccount.findUnique({ where: { label } });
-  return Boolean(account);
+  return Boolean(account) && !account!.needsReconnect;
 }
 
 export async function getConnectedGoogleAccounts() {
   return prisma.googleAccount.findMany();
+}
+
+/**
+ * Cuentas conectadas cuyo token ya no sirve (caducado, revocado, o emitido por
+ * otro proyecto de Google Cloud). El dashboard las usa para avisar en vez de
+ * dejar los widgets vacíos sin explicación.
+ */
+export async function getAccountsNeedingReconnect() {
+  const accounts = await prisma.googleAccount.findMany({ where: { needsReconnect: true } });
+  return accounts.map((a) => ({
+    label: a.label,
+    email: a.email,
+    name: GOOGLE_ACCOUNT_LABELS.find((l) => l.value === a.label)?.name ?? a.label,
+  }));
+}
+
+async function markNeedsReconnect(label: GoogleAccountLabel) {
+  await prisma.googleAccount.update({ where: { label }, data: { needsReconnect: true } });
 }
 
 export async function disconnectGoogle(label: GoogleAccountLabel) {
@@ -48,6 +66,23 @@ export async function disconnectGoogle(label: GoogleAccountLabel) {
 export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSONAL") {
   const account = await prisma.googleAccount.findUnique({ where: { label } });
   if (!account) return null;
+  if (account.needsReconnect) return null;
+
+  const config = await getGoogleOAuthConfig();
+  if (!config) return null;
+
+  // Un token solo se puede refrescar con el mismo Client ID que lo emitió. Si
+  // las credenciales guardadas son de otro proyecto, Google responde
+  // `unauthorized_client` sin más contexto — detectarlo aquí evita esa
+  // confusión y pide reconectar, que es lo único que lo arregla.
+  if (account.clientId && account.clientId !== config.clientId) {
+    console.error(
+      `[google] ${label}: el token lo emitió el Client ID ${account.clientId.slice(0, 20)}… ` +
+        `pero ahora hay configurado ${config.clientId.slice(0, 20)}… — hay que reconectar la cuenta.`
+    );
+    await markNeedsReconnect(label);
+    return null;
+  }
 
   const client = await getOAuthClient();
   if (!client) return null;
@@ -74,10 +109,13 @@ export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSON
     try {
       await client.refreshAccessToken();
     } catch (err) {
-      console.error(
-        `[google] token refresh failed for ${label} — reconnect from /ajustes:`,
-        err instanceof Error ? err.message : err
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      // `invalid_grant` = token caducado o revocado (típico del modo Prueba de
+      // Google, que los caduca a los 7 días). `unauthorized_client` = las
+      // credenciales no casan con las que lo emitieron. En ambos casos lo
+      // único que lo arregla es reconectar, así que se marca para avisar.
+      console.error(`[google] fallo al refrescar el token de ${label} (${message}) — hay que reconectar`);
+      await markNeedsReconnect(label);
       return null;
     }
   }

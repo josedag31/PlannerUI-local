@@ -149,6 +149,14 @@ model GoogleAccount {
   refreshToken String
   expiryDate   BigInt
   scope        String
+  // Client ID que emitió estos tokens. Si luego se guardan credenciales de otro
+  // proyecto de Google Cloud, el refresco falla con `unauthorized_client` sin
+  // pista de por qué — guardarlo permite detectarlo y decirlo claramente.
+  clientId     String?
+  // Se marca cuando el refresco falla (token caducado, revocado o de otro
+  // proyecto). La app lo usa para avisar y ofrecer reconectar en un clic, en
+  // vez de dejar los widgets vacíos en silencio.
+  needsReconnect Boolean          @default(false)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 }

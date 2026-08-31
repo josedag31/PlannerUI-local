@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
-import { getOAuthClient } from "@/lib/google";
+import { getOAuthClient, getGoogleOAuthConfig } from "@/lib/google";
 import { prisma } from "@/lib/prisma";
 import type { GoogleAccountLabel } from "@/generated/prisma/client";
 
@@ -49,6 +49,11 @@ export async function GET(request: NextRequest) {
     const oauth2 = google.oauth2({ auth: client, version: "v2" });
     const { data: userInfo } = await oauth2.userinfo.get();
 
+    // Se guarda el Client ID que emite estos tokens: si mañana se configuran
+    // credenciales de otro proyecto, se detecta y se pide reconectar en vez de
+    // fallar con un `unauthorized_client` sin explicación.
+    const config = await getGoogleOAuthConfig();
+
     await prisma.googleAccount.upsert({
       where: { label },
       update: {
@@ -57,6 +62,8 @@ export async function GET(request: NextRequest) {
         refreshToken,
         expiryDate: BigInt(tokens.expiry_date),
         scope: tokens.scope ?? "",
+        clientId: config?.clientId ?? null,
+        needsReconnect: false,
       },
       create: {
         label,
@@ -65,6 +72,8 @@ export async function GET(request: NextRequest) {
         refreshToken,
         expiryDate: BigInt(tokens.expiry_date),
         scope: tokens.scope ?? "",
+        clientId: config?.clientId ?? null,
+        needsReconnect: false,
       },
     });
 

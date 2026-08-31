@@ -12,7 +12,8 @@ import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
 import ClockWidget from "@/components/widgets/ClockWidget";
 import { getSettings } from "@/lib/settings";
-import { isGoogleConnected } from "@/lib/google";
+import { isGoogleConnected, getAccountsNeedingReconnect } from "@/lib/google";
+import ReconnectBanner from "@/components/ReconnectBanner";
 import { getUpcomingCalendarEvents, getRecentDriveFiles, getGmailSummary } from "@/lib/googleData";
 import GoogleCalendarWidget from "@/components/widgets/GoogleCalendarWidget";
 import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
@@ -28,6 +29,7 @@ import type { GoogleAccountLabel } from "@/generated/prisma/client";
 export default async function DashboardPage() {
   const settings = await getSettings();
   const layout = await getDashboardLayout();
+  const accountsNeedingReconnect = await getAccountsNeedingReconnect();
 
   const calendarAccount: GoogleAccountLabel = settings.dashboardAccounts.calendar;
   const driveAccount: GoogleAccountLabel = settings.dashboardAccounts.drive;
@@ -196,6 +198,8 @@ export default async function DashboardPage() {
           {today.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
       </header>
+
+      <ReconnectBanner accounts={accountsNeedingReconnect} />
 
       <DashboardGrid layout={layout} widgets={widgets} widgetTitles={WIDGET_TITLES} />
 

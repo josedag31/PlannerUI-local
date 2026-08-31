@@ -368,6 +368,17 @@ export async function updateGoogleOAuthConfig(formData: FormData) {
     update: { clientId, clientSecret, redirectUri },
     create: { id: 1, clientId, clientSecret, redirectUri },
   });
+
+  // Los tokens ya emitidos solo valen con el Client ID que los emitió: si se
+  // cambia a otro proyecto de Google Cloud, dejan de servir al instante. Se
+  // marcan para que la app lo diga y ofrezca reconectar, en vez de fallar
+  // luego con `unauthorized_client` sin pista de la causa.
+  await prisma.googleAccount.updateMany({
+    where: { NOT: { clientId } },
+    data: { needsReconnect: true },
+  });
+
+  revalidatePath("/");
   revalidatePath("/ajustes");
 }
 

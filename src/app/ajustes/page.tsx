@@ -29,12 +29,14 @@ function GoogleAccountBlock({
   label,
   name,
   connected,
+  needsReconnect,
   email,
   configured,
 }: {
   label: GoogleAccountLabel;
   name: string;
   connected: boolean;
+  needsReconnect: boolean;
   email: string | null;
   configured: boolean;
 }) {
@@ -42,7 +44,14 @@ function GoogleAccountBlock({
     <div className="flex items-center justify-between gap-4 bg-surface-2 border border-border rounded-lg p-3">
       <div className="text-sm">
         <span className="font-medium">{name}</span>
-        {connected ? (
+        {needsReconnect ? (
+          // Antes ponía "Conectado" aunque el token estuviese muerto: la fila
+          // existía en la BBDD, pero refrescarlo fallaba. Eso hacía parecer que
+          // la app perdía datos por su cuenta.
+          <div className="text-xs text-danger mt-0.5">
+            ▲ Permiso caducado{email ? ` (${email})` : ""} — reconecta para volver a ver sus datos
+          </div>
+        ) : connected ? (
           <div className="text-xs text-accent mt-0.5">
             ● Conectado{email ? ` como ${email}` : ""}
           </div>
@@ -50,7 +59,7 @@ function GoogleAccountBlock({
           <div className="text-xs text-muted mt-0.5">Sin conectar</div>
         )}
       </div>
-      {connected ? (
+      {connected && !needsReconnect ? (
         <form action="/api/google/disconnect" method="POST">
           <input type="hidden" name="label" value={label} />
           <button
@@ -70,7 +79,7 @@ function GoogleAccountBlock({
               : "bg-surface text-muted pointer-events-none"
           }`}
         >
-          Conectar
+          {needsReconnect ? "Reconectar" : "Conectar"}
         </a>
       )}
     </div>
@@ -166,6 +175,7 @@ export default async function AjustesPage({
                   label={value}
                   name={name}
                   connected={Boolean(account)}
+                  needsReconnect={Boolean(account?.needsReconnect)}
                   email={account?.email ?? null}
                   configured={configured}
                 />
