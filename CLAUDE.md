@@ -23,14 +23,25 @@ sincronizarlos.
 
 ## Los cambios se prueban en `npm run dev`, no en el `.exe`
 
-El `.exe` instalado es su herramienta de uso diario. Se reconstruye **solo
-cuando hay un conjunto de cambios ya probados y él lo pide**, no en cada
-iteración. Reinstalar por cada cambio le cierra la app en mitad de su jornada.
+El `.exe` instalado es su herramienta de uso diario. **No se reconstruye ni se
+instala nada hasta que él lo pida explícitamente** ("publicamos" / "haz la
+release"). Reinstalar por cada cambio le cierra la app en mitad de su jornada.
 
-`npm run dev` necesita el puerto 3000 (la redirect URI de OAuth de Google está
-fijada ahí) y el `.exe` usa ese mismo puerto: no pueden convivir. Si el cambio
-no toca Google, usar otro puerto y no cerrarle nada; si lo toca, pedirle que
-cierre la app antes.
+Desarrollo y app instalada están completamente separados, y pueden correr a la
+vez sin enterarse el uno del otro:
+
+| | Desarrollo | App instalada |
+|---|---|---|
+| Puerto | 3100 (`npm run dev`) | 3000 |
+| BBDD | `dev.db` del proyecto | `%APPDATA%\app.lockedinplanner.desktop\dev.db` |
+| Callback de Google | `http://localhost:3100/api/google/callback` | `…:3000/api/google/callback` |
+
+Las dos URIs están dadas de alta en el cliente OAuth de Google, y cada BBDD
+guarda la suya en `GoogleOAuthConfig.redirectUri`. Por eso **nunca hay que
+cerrarle la app para trabajar**, ni siquiera para probar cosas de Google.
+
+No cambiar los scripts `dev`/`start` de vuelta al 3000: es lo que evita
+robarle el puerto sin darse cuenta.
 
 ## No se puede diagnosticar su instalación desde aquí
 

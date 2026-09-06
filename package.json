@@ -3,9 +3,9 @@
   "version": "0.1.8",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--use-system-ca next dev",
+    "dev": "cross-env NODE_OPTIONS=--use-system-ca next dev --port 3100",
     "build": "next build",
-    "start": "cross-env NODE_OPTIONS=--use-system-ca next start",
+    "start": "cross-env NODE_OPTIONS=--use-system-ca next start --port 3100",
     "lint": "eslint",
     "desktop:prepare": "node scripts/prepare-desktop.mjs",
     "desktop:build": "npm run build && npm run desktop:prepare && tauri build",

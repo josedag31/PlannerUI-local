@@ -20,7 +20,14 @@ npx prisma migrate dev
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000).
+Abre [http://localhost:3100](http://localhost:3100).
+
+El servidor de desarrollo usa el **3100** a propósito: la app de escritorio
+instalada sirve en el 3000, y así se pueden tener las dos abiertas a la vez sin
+pisarse. Si conectas Google en desarrollo, registra también
+`http://localhost:3100/api/google/callback` como URI de redireccionamiento
+autorizado en tu cliente de OAuth, y ponla en `/ajustes` → *Credenciales de
+Google* (cada base de datos guarda la suya).
 
 ## Estructura
 
