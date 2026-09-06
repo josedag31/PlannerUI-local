@@ -31,9 +31,17 @@ export async function getOAuthClient() {
   return new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
 }
 
+/**
+ * Hay cuenta vinculada. No comprueba si su token sirve: eso lo decide
+ * `getAuthenticatedClient` al usarlo, y es a propósito. Si aquí se excluyeran
+ * las cuentas marcadas como caducadas, sus widgets no se dibujarían, nunca se
+ * intentaría refrescar el token y una marca puesta por error se quedaría
+ * clavada para siempre. Para avisar en la interfaz está
+ * `getAccountsNeedingReconnect`.
+ */
 export async function isGoogleConnected(label: GoogleAccountLabel = "PERSONAL") {
   const account = await prisma.googleAccount.findUnique({ where: { label } });
-  return Boolean(account) && !account!.needsReconnect;
+  return Boolean(account);
 }
 
 export async function getConnectedGoogleAccounts() {
@@ -54,8 +62,20 @@ export async function getAccountsNeedingReconnect() {
   }));
 }
 
-async function markNeedsReconnect(label: GoogleAccountLabel) {
-  await prisma.googleAccount.update({ where: { label }, data: { needsReconnect: true } });
+async function setNeedsReconnect(label: GoogleAccountLabel, value: boolean) {
+  await prisma.googleAccount.update({ where: { label }, data: { needsReconnect: value } });
+}
+
+/**
+ * Distingue "este token está muerto" de "ahora mismo no se puede hablar con
+ * Google". Solo lo primero justifica pedirle al usuario que reconecte: marcar
+ * la cuenta por un corte de red la dejaría inservible hasta que la reconectase
+ * a mano, que es justo la molestia que se quiere evitar.
+ */
+function isTokenPermanentlyDead(message: string) {
+  return ["invalid_grant", "unauthorized_client", "invalid_client", "invalid_request"].some((code) =>
+    message.includes(code)
+  );
 }
 
 export async function disconnectGoogle(label: GoogleAccountLabel) {
@@ -66,7 +86,6 @@ export async function disconnectGoogle(label: GoogleAccountLabel) {
 export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSONAL") {
   const account = await prisma.googleAccount.findUnique({ where: { label } });
   if (!account) return null;
-  if (account.needsReconnect) return null;
 
   const config = await getGoogleOAuthConfig();
   if (!config) return null;
@@ -80,7 +99,7 @@ export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSON
       `[google] ${label}: el token lo emitió el Client ID ${account.clientId.slice(0, 20)}… ` +
         `pero ahora hay configurado ${config.clientId.slice(0, 20)}… — hay que reconectar la cuenta.`
     );
-    await markNeedsReconnect(label);
+    if (!account.needsReconnect) await setNeedsReconnect(label, true);
     return null;
   }
 
@@ -105,18 +124,37 @@ export async function getAuthenticatedClient(label: GoogleAccountLabel = "PERSON
     });
   });
 
-  if (Number(account.expiryDate) < Date.now() + 60_000) {
+  // Si la cuenta viene marcada como caducada se fuerza un refresco aunque el
+  // access token parezca vigente: es la única forma de comprobar si la marca
+  // sigue siendo cierta y poder quitarla sola. Sin esto, una marca puesta por
+  // un fallo pasajero se quedaba para siempre y obligaba a reconectar a mano
+  // una cuenta que en realidad funcionaba.
+  const tokenExpired = Number(account.expiryDate) < Date.now() + 60_000;
+
+  if (tokenExpired || account.needsReconnect) {
     try {
       await client.refreshAccessToken();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      // `invalid_grant` = token caducado o revocado (típico del modo Prueba de
-      // Google, que los caduca a los 7 días). `unauthorized_client` = las
-      // credenciales no casan con las que lo emitieron. En ambos casos lo
-      // único que lo arregla es reconectar, así que se marca para avisar.
-      console.error(`[google] fallo al refrescar el token de ${label} (${message}) — hay que reconectar`);
-      await markNeedsReconnect(label);
+
+      if (isTokenPermanentlyDead(message)) {
+        // `invalid_grant` = token caducado o revocado. `unauthorized_client` =
+        // las credenciales no casan con las que lo emitieron. Solo reconectar
+        // lo arregla, así que se marca para avisar en la interfaz.
+        console.error(`[google] el token de ${label} ya no vale (${message}) — hay que reconectar`);
+        if (!account.needsReconnect) await setNeedsReconnect(label, true);
+      } else {
+        // Corte de red, DNS, Google caído... El token puede seguir siendo
+        // bueno: se deja como está y ya funcionará en la siguiente carga.
+        console.error(`[google] no se pudo contactar con Google para ${label} (${message}) — se reintentará`);
+      }
       return null;
+    }
+
+    // El refresco ha ido bien: si la cuenta estaba marcada, la marca era vieja.
+    if (account.needsReconnect) {
+      console.log(`[google] ${label} vuelve a funcionar — se quita el aviso de reconexión`);
+      await setNeedsReconnect(label, false);
     }
   }
 

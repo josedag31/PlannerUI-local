@@ -50,6 +50,52 @@ if (pending.length === 0) {
   process.exit(0);
 }
 
+// Copia de seguridad antes de tocar nada. Solo se hace cuando hay migraciones
+// pendientes: es el único momento en que el esquema cambia y, por tanto, el
+// único con riesgo real. Si la copia falla no se migra — es preferible que la
+// app se queje a modificar la BBDD del usuario sin marcha atrás.
+const BACKUPS_TO_KEEP = 5;
+const backupsDir = path.join(path.dirname(dbPath), "backups");
+
+try {
+  fs.mkdirSync(backupsDir, { recursive: true });
+
+  // Hora local, no UTC: así el nombre del fichero cuadra con la fecha que se ve
+  // en el explorador de Windows.
+  const now = new Date();
+  const p2 = (n) => String(n).padStart(2, "0");
+  const stamp =
+    `${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}` +
+    `-${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}`;
+  const backupPath = path.join(backupsDir, `dev-${stamp}.db`);
+
+  // `VACUUM INTO` escribe una copia consistente en un solo fichero, incluyendo
+  // lo que hubiera en el WAL. Copiar el .db a pelo puede dejar fuera esos
+  // cambios y dar una copia corrupta.
+  db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`);
+  console.log(`[migrate] copia de seguridad en ${backupPath}`);
+
+  // Se conservan solo las más recientes: son copias completas y el objetivo es
+  // poder deshacer una actualización reciente, no guardar un histórico.
+  const old = fs
+    .readdirSync(backupsDir)
+    .filter((f) => /^dev-\d{8}-\d{6}\.db$/.test(f))
+    .sort()
+    .slice(0, -BACKUPS_TO_KEEP);
+  for (const f of old) {
+    fs.rmSync(path.join(backupsDir, f), { force: true });
+  }
+  if (old.length > 0) {
+    console.log(`[migrate] ${old.length} copia(s) antigua(s) eliminada(s).`);
+  }
+} catch (err) {
+  console.error(
+    `[migrate] no se pudo crear la copia de seguridad (${err instanceof Error ? err.message : err}) — ` +
+      `no se aplica ninguna migración para no tocar la BBDD sin respaldo.`
+  );
+  process.exit(1);
+}
+
 for (const name of pending) {
   const sqlPath = path.join(migrationsDir, name, "migration.sql");
   const sql = fs.readFileSync(sqlPath, "utf8");

@@ -255,6 +255,23 @@ Control de aplicaciones y del explorador → Smart App Control → Desactivado.
 En builds recientes de Windows 11 (24H2/25H2) se puede volver a activar
 después sin reinstalar Windows.
 
+### Tus datos al actualizar
+
+La base de datos vive en `%APPDATA%\app.lockedinplanner.desktop\dev.db` y
+**no se toca al instalar una versión nueva**: solo se sustituyen el programa y
+sus recursos. Instala encima de lo que ya tengas; no hace falta desinstalar
+(y es mejor no hacerlo, porque el desinstalador puede llevarse esa carpeta).
+
+Si una versión trae cambios de esquema, la app los aplica sola al arrancar y
+**antes guarda una copia de seguridad completa** en
+`%APPDATA%\app.lockedinplanner.desktop\backups\dev-AAAAMMDD-HHMMSS.db`. Se
+conservan las 5 más recientes. Si la copia no se pudiera crear, no se aplica
+ninguna migración: es preferible que la app falle a modificar tus datos sin
+poder deshacerlo.
+
+Para volver atrás, cierra la app, borra `dev.db` y renombra la copia que
+quieras a `dev.db`.
+
 ### Notas técnicas
 
 - `src-tauri/resources/` (build de Next, `node.exe`, DB plantilla) y
