@@ -10,7 +10,15 @@ import {
 } from "@/lib/actions";
 import DriveFolderPicker from "@/components/widgets/DriveFolderPicker";
 
-export function AppSettingsForm({ appName, tagline }: { appName: string; tagline: string }) {
+export function AppSettingsForm({
+  appName,
+  tagline,
+  userName,
+}: {
+  appName: string;
+  tagline: string;
+  userName: string | null;
+}) {
   const [saved, setSaved] = useState(false);
 
   return (
@@ -38,6 +46,16 @@ export function AppSettingsForm({ appName, tagline }: { appName: string; tagline
           name="tagline"
           defaultValue={tagline}
           maxLength={80}
+          className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">Tu nombre (saludo de bienvenida)</label>
+        <input
+          name="userName"
+          defaultValue={userName ?? ""}
+          maxLength={30}
+          placeholder="Déjalo vacío para saludar sin nombre"
           className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent"
         />
       </div>

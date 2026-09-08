@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
 import DashboardGrid from "@/components/DashboardGrid";
@@ -14,13 +15,15 @@ import ClockWidget from "@/components/widgets/ClockWidget";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected, getAccountsNeedingReconnect } from "@/lib/google";
 import ReconnectBanner from "@/components/ReconnectBanner";
-import { getUpcomingCalendarEvents, getRecentDriveFiles, getGmailSummary } from "@/lib/googleData";
+import { getUpcomingCalendarEvents } from "@/lib/googleData";
 import GoogleCalendarWidget from "@/components/widgets/GoogleCalendarWidget";
-import GoogleDriveWidget from "@/components/widgets/GoogleDriveWidget";
-import GmailWidget from "@/components/widgets/GmailWidget";
 import { isMicrosoftConnected } from "@/lib/microsoft";
-import { getOutlookMailSummary } from "@/lib/microsoftData";
-import OutlookWidget from "@/components/widgets/OutlookWidget";
+import {
+  ListSkeleton,
+  DriveCardContent,
+  GmailCardContent,
+  OutlookCardContent,
+} from "@/components/widgets/StreamedWidgets";
 import { getDashboardLayout } from "@/lib/dashboardLayout";
 import { deleteEvent } from "@/lib/actions";
 import { WIDGET_TITLES, type WidgetKey } from "@/lib/dashboardWidgets";
@@ -41,14 +44,11 @@ export default async function DashboardPage() {
     isGoogleConnected(gmailAccount),
   ]);
 
-  const [googleEvents, driveFiles, gmailSummary] = await Promise.all([
-    calendarConnected ? getUpcomingCalendarEvents(20, calendarAccount) : Promise.resolve([]),
-    driveConnected ? getRecentDriveFiles(8, driveAccount, settings.driveFolderId) : Promise.resolve([]),
-    gmailConnected ? getGmailSummary(gmailAccount) : Promise.resolve(null),
-  ]);
+  // Los eventos de Calendar sí se esperan aquí: además de su widget alimentan
+  // la vista "Semana" y sirven para deduplicar lo que el planner ya creó allí.
+  const googleEvents = calendarConnected ? await getUpcomingCalendarEvents(20, calendarAccount) : [];
 
   const outlookConnected = await isMicrosoftConnected();
-  const outlookSummary = outlookConnected ? await getOutlookMailSummary() : null;
   const sectionColors = {
     STUDY: settings.sections.STUDY.color,
     ARUS: settings.sections.ARUS.color,
@@ -173,19 +173,28 @@ export default async function DashboardPage() {
         <GoogleCalendarWidget events={externalGoogleEvents.slice(0, 8)} />
       </Card>
     ) : undefined,
+    // Drive, Gmail y Outlook salen del dashboard con su marco y su título ya
+    // pintados, y solo su contenido espera a la API. Así la página no se queda
+    // en blanco por una llamada lenta.
     googleDrive: driveConnected ? (
       <Card title="Google Drive">
-        <GoogleDriveWidget files={driveFiles} />
+        <Suspense fallback={<ListSkeleton rows={5} />}>
+          <DriveCardContent account={driveAccount} folderId={settings.driveFolderId} />
+        </Suspense>
       </Card>
     ) : undefined,
     gmail: gmailConnected ? (
       <Card title="Gmail">
-        <GmailWidget summary={gmailSummary} />
+        <Suspense fallback={<ListSkeleton rows={4} />}>
+          <GmailCardContent account={gmailAccount} />
+        </Suspense>
       </Card>
     ) : undefined,
     outlook: outlookConnected ? (
       <Card title="Outlook">
-        <OutlookWidget summary={outlookSummary} />
+        <Suspense fallback={<ListSkeleton rows={4} />}>
+          <OutlookCardContent />
+        </Suspense>
       </Card>
     ) : undefined,
   };

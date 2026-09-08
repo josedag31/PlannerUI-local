@@ -124,6 +124,8 @@ model AppSettings {
   id                       Int                @id @default(1)
   appName                  String             @default("Centro de Mando")
   tagline                  String             @default("Tu base de operaciones para el curso")
+  // Nombre para el saludo de bienvenida. Opcional: si está vacío se saluda sin nombre.
+  userName                 String?
   dashboardCalendarAccount GoogleAccountLabel @default(PERSONAL)
   dashboardDriveAccount    GoogleAccountLabel @default(PERSONAL)
   dashboardGmailAccount    GoogleAccountLabel @default(PERSONAL)

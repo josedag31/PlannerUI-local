@@ -12,6 +12,8 @@ const DEFAULT_SECTIONS: Record<Section, { label: string; color: string; icon: st
 export type ResolvedSettings = {
   appName: string;
   tagline: string;
+  /** Nombre para el saludo de bienvenida. Vacío = se saluda sin nombre. */
+  userName: string | null;
   sections: Record<Section, { label: string; color: string; icon: string }>;
   dashboardAccounts: {
     calendar: GoogleAccountLabel;
@@ -48,6 +50,7 @@ export async function getSettings(): Promise<ResolvedSettings> {
   return {
     appName: app.appName,
     tagline: app.tagline,
+    userName: app.userName,
     sections,
     dashboardAccounts: {
       calendar: app.dashboardCalendarAccount,

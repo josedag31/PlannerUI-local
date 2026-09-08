@@ -124,7 +124,7 @@ export default async function AjustesPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Identidad de la app">
-          <AppSettingsForm appName={settings.appName} tagline={settings.tagline} />
+          <AppSettingsForm appName={settings.appName} tagline={settings.tagline} userName={settings.userName} />
         </Card>
 
         <Card title="Secciones">

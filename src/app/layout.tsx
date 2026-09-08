@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import WelcomeOverlay from "@/components/WelcomeOverlay";
 import { getSettings } from "@/lib/settings";
 
 // La app entera lee de una BBDD SQLite local mutable (tareas, ajustes,
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex bg-background text-foreground" suppressHydrationWarning>
+        <WelcomeOverlay userName={settings.userName} />
         <Sidebar appName={settings.appName} tagline={settings.tagline} sections={settings.sections} />
         <main className="flex-1 min-w-0 px-8 py-8 max-w-[1400px]">{children}</main>
       </body>
