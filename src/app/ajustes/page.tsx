@@ -1,4 +1,5 @@
 import Card from "@/components/Card";
+import Cascade from "@/components/Cascade";
 import { getSettings, SECTION_KEYS } from "@/lib/settings";
 import {
   AppSettingsForm,
@@ -122,7 +123,7 @@ export default async function AjustesPage({
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Cascade className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Identidad de la app">
           <AppSettingsForm appName={settings.appName} tagline={settings.tagline} userName={settings.userName} />
         </Card>
@@ -281,7 +282,7 @@ export default async function AjustesPage({
             </div>
           </details>
         </Card>
-      </div>
+      </Cascade>
     </div>
   );
 }

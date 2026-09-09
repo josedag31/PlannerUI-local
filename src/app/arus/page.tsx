@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
+import Cascade from "@/components/Cascade";
 import TaskList from "@/components/widgets/TaskList";
 import QuickAddTask from "@/components/widgets/QuickAddTask";
 import GoalList from "@/components/widgets/GoalList";
@@ -53,7 +54,7 @@ export default async function ArusPage() {
         <p className="text-sm text-muted mt-1">Tareas de equipo, reuniones y objetivos técnicos.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Cascade className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card title="Tareas del equipo" className="lg:col-span-2">
           <QuickAddTask section="ARUS" />
           <TaskList tasks={tasks} />
@@ -92,7 +93,7 @@ export default async function ArusPage() {
             para ver aquí los archivos de Drive del equipo.
           </p>
         )}
-      </div>
+      </Cascade>
     </div>
   );
 }
