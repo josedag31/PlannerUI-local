@@ -167,7 +167,7 @@ html[data-welcome-pending="1"] .welcome-overlay {
    estadísticas de las próximas tareas (semana vs. anterior, rachas...). */
 .progress-fill {
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  box-shadow: 0 0 8px 0 var(--accent-glow);
+  box-shadow: 0 0 6px 1px var(--accent-glow), 0 0 16px 2px var(--accent-glow);
 }
 
 .kpi-value {
@@ -184,6 +184,14 @@ html[data-welcome-pending="1"] .welcome-overlay {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+}
+
+/* Texto con halo del acento — para números "vivos" (el reloj) donde además
+   de la tipografía de KPI interesa el mismo glow que las barras/anillos. Va
+   después de .kpi-value a propósito: pisa su color por defecto. */
+.glow-text {
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent-glow), 0 0 28px var(--accent-glow);
 }
 
 /* Quien tenga activado "reducir movimiento" en su sistema ve el resultado

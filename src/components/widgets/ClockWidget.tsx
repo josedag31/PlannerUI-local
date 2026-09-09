@@ -17,10 +17,10 @@ export default function ClockWidget() {
 
   return (
     <div className="text-center py-2">
-      <div className="text-4xl font-bold tracking-tight font-mono text-accent">
+      <div className="kpi-value text-4xl font-mono glow-text">
         {now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
       </div>
-      <div className="text-xs text-muted mt-1 capitalize">
+      <div className="kpi-label mt-1.5">
         {now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
       </div>
     </div>
