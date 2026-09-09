@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { animate, useReducedMotion } from "motion/react";
-import { useWelcomeGate } from "@/components/WelcomeOverlay";
+import { animate } from "motion/react";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 
 /**
- * Número que cuenta desde 0 hasta `value` la primera vez que se ve en
- * pantalla — el mismo criterio de todo el sistema visual: no arranca
- * mientras el saludo tape la pantalla (`useWelcomeGate`) y se salta la
- * animación con "reducir movimiento" activado.
+ * Número que cuenta desde 0 hasta `value` la primera vez que entra en el
+ * viewport (no antes, aunque el saludo ya haya terminado — ver
+ * `useRevealOnView`). Se salta la animación con "reducir movimiento", y
+ * vuelve a contar si `value` cambia de verdad, no por volver a hacer scroll
+ * sobre el mismo valor.
  */
 export default function CountUp({
   value,
   decimals = 0,
-  duration = 1.1,
+  duration = 1.8,
   delay = 0,
   suffix = "",
 }: {
@@ -23,12 +24,11 @@ export default function CountUp({
   delay?: number;
   suffix?: string;
 }) {
-  const puedeAnimar = useWelcomeGate();
-  const reduceMotion = useReducedMotion();
-  const anima = puedeAnimar && !reduceMotion;
-  const [mostrado, setMostrado] = useState(anima ? 0 : value);
+  const { ref, listo, anima } = useRevealOnView<HTMLSpanElement>(value);
+  const [mostrado, setMostrado] = useState(0);
 
   useEffect(() => {
+    if (!listo) return;
     if (!anima) {
       setMostrado(value);
       return;
@@ -40,12 +40,12 @@ export default function CountUp({
       onUpdate: setMostrado,
     });
     return () => controls.stop();
-  }, [anima, value, duration, delay]);
+  }, [listo, anima, value, duration, delay]);
 
   return (
-    <>
+    <span ref={ref}>
       {mostrado.toFixed(decimals)}
       {suffix}
-    </>
+    </span>
   );
 }

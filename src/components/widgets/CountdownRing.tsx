@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { animate, useReducedMotion } from "motion/react";
-import { useWelcomeGate } from "@/components/WelcomeOverlay";
+import { animate } from "motion/react";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 import CountUp from "@/components/CountUp";
 
 // Ventana de referencia del anillo: más allá de esto se queda casi vacío, no
@@ -40,6 +40,9 @@ function diasHasta(date: Date) {
  * prop a `DashboardGrid` — se quedan fijos en su valor `initial` para
  * siempre, sin ningún error en consola. Ver [[Locked In - Problemas
  * resueltos]].
+ *
+ * No arranca hasta que el propio anillo entra en el viewport (no basta con
+ * que el saludo haya terminado) — `useRevealOnView`.
  */
 export default function CountdownRing({
   title,
@@ -50,38 +53,35 @@ export default function CountdownRing({
   date: Date;
   color: string;
 }) {
-  const puedeAnimar = useWelcomeGate();
-  const reduceMotion = useReducedMotion();
-  const anima = puedeAnimar && !reduceMotion;
-  const circleRef = useRef<SVGCircleElement>(null);
-
   const dias = diasHasta(date);
   const progreso = Math.min(1, Math.max(0.02, 1 - Math.max(dias, 0) / VENTANA_DIAS));
-  const glow = hexToRgba(color, 0.55);
+  const { ref, listo, anima } = useRevealOnView<HTMLDivElement>(progreso);
+  const circleRef = useRef<SVGCircleElement>(null);
 
+  const glow = hexToRgba(color, 0.55);
   const numero = dias < 0 ? -dias : dias;
   const etiqueta = dias < 0 ? "días tarde" : dias === 0 ? "hoy" : dias === 1 ? "mañana" : "días";
 
   useEffect(() => {
     const el = circleRef.current;
-    if (!el || !puedeAnimar) return;
+    if (!el || !listo) return;
 
     if (!anima) {
       el.style.strokeDasharray = `${progreso * CIRCUNFERENCIA} ${CIRCUNFERENCIA}`;
       return;
     }
     const controls = animate(0, progreso, {
-      duration: 1.1,
+      duration: 1.8,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (v) => {
         el.style.strokeDasharray = `${v * CIRCUNFERENCIA} ${CIRCUNFERENCIA}`;
       },
     });
     return () => controls.stop();
-  }, [puedeAnimar, anima, progreso]);
+  }, [listo, anima, progreso]);
 
   return (
-    <div className="flex flex-col items-center py-2">
+    <div ref={ref} className="flex flex-col items-center py-2">
       <div className="relative w-32 h-32">
         <svg viewBox="0 0 120 120" className="w-32 h-32 -rotate-90">
           <circle cx="60" cy="60" r={RADIO} fill="none" stroke="var(--surface-2)" strokeWidth="8" />
@@ -100,7 +100,7 @@ export default function CountdownRing({
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="kpi-value text-3xl">
-            <CountUp value={numero} />
+            <CountUp value={numero} duration={1.8} />
           </span>
           <span className="kpi-label">{etiqueta}</span>
         </div>
