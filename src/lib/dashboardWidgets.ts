@@ -5,6 +5,7 @@
 export const WIDGET_KEYS = [
   "week",
   "activity",
+  "taskKpis",
   "countdown",
   "taskCountdown",
   "tasks",
@@ -23,6 +24,7 @@ export type WidgetKey = (typeof WIDGET_KEYS)[number];
 export const WIDGET_TITLES: Record<WidgetKey, string> = {
   week: "Semana",
   activity: "Mapa de actividad",
+  taskKpis: "KPIs de tareas",
   countdown: "Próximo",
   taskCountdown: "Próxima tarea",
   tasks: "Tareas pendientes",
@@ -40,6 +42,7 @@ export const WIDGET_TITLES: Record<WidgetKey, string> = {
 export const WIDGET_SPANS: Record<WidgetKey, string> = {
   week: "lg:col-span-3",
   activity: "lg:col-span-3",
+  taskKpis: "lg:col-span-3",
   countdown: "",
   taskCountdown: "",
   tasks: "lg:col-span-2",

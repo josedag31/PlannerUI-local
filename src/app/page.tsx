@@ -15,6 +15,8 @@ import ClockWidget from "@/components/widgets/ClockWidget";
 import CountdownRing from "@/components/widgets/CountdownRing";
 import ActivityHeatmap from "@/components/widgets/ActivityHeatmap";
 import { getActivityCounts } from "@/lib/activity";
+import TaskKpiRow from "@/components/widgets/TaskKpiRow";
+import { getTaskKpis } from "@/lib/taskKpis";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected, getAccountsNeedingReconnect } from "@/lib/google";
 import ReconnectBanner from "@/components/ReconnectBanner";
@@ -63,8 +65,17 @@ export default async function DashboardPage() {
   const weekAhead = new Date(today);
   weekAhead.setDate(weekAhead.getDate() + 7);
 
-  const [pendingTasks, habits, goals, upcomingEvents, upcomingExams, weekTasks, nextTaskDue, activityCounts] =
-    await Promise.all([
+  const [
+    pendingTasks,
+    habits,
+    goals,
+    upcomingEvents,
+    upcomingExams,
+    weekTasks,
+    nextTaskDue,
+    activityCounts,
+    taskKpis,
+  ] = await Promise.all([
       prisma.task.findMany({
         where: { done: false },
         orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -84,6 +95,7 @@ export default async function DashboardPage() {
       // fecha no nula sea la más próxima.
       prisma.task.findFirst({ where: { done: false, dueDate: { not: null } }, orderBy: { dueDate: "asc" } }),
       getActivityCounts(),
+      getTaskKpis(),
     ]);
 
   // Google Calendar events that already correspond to a local task/exam/event
@@ -150,6 +162,11 @@ export default async function DashboardPage() {
     activity: (
       <Card title="Mapa de actividad" className="lg:col-span-3">
         <ActivityHeatmap counts={activityCounts} />
+      </Card>
+    ),
+    taskKpis: (
+      <Card title="KPIs de tareas" className="lg:col-span-3">
+        <TaskKpiRow {...taskKpis} />
       </Card>
     ),
     countdown: (
