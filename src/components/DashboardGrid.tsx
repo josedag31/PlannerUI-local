@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { updateDashboardLayout } from "@/lib/actions";
 import { useWelcomeGate } from "@/components/WelcomeOverlay";
+import Collapse from "@/components/Collapse";
 import { WIDGET_SPANS, type WidgetKey, type WidgetLayoutItem } from "@/lib/dashboardWidgets";
 
 export default function DashboardGrid({
@@ -58,7 +59,7 @@ export default function DashboardGrid({
         </button>
       </div>
 
-      {editMode && (
+      <Collapse open={editMode}>
         <div className="card p-4 mb-4 space-y-2">
           <p className="text-xs text-muted mb-2">
             Marca lo que quieras ver, y arrastra las tarjetas de abajo para reordenarlas.
@@ -80,7 +81,7 @@ export default function DashboardGrid({
             ))}
           </div>
         </div>
-      )}
+      </Collapse>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {visibleItems.map((item, index) => (

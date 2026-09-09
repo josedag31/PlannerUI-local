@@ -1,5 +1,6 @@
 import Card from "@/components/Card";
 import Cascade from "@/components/Cascade";
+import Disclosure from "@/components/Disclosure";
 import { getSettings, SECTION_KEYS } from "@/lib/settings";
 import {
   AppSettingsForm,
@@ -184,17 +185,15 @@ export default async function AjustesPage({
             })}
           </div>
 
-          <details className="text-sm" open={!configured}>
-            <summary className="cursor-pointer text-muted hover:text-foreground select-none">
-              {configured ? "Editar credenciales de Google" : "Credenciales de Google"}
-            </summary>
-            <div className="mt-3">
-              <GoogleOAuthConfigForm
-                clientId={oauthConfig?.clientId ?? ""}
-                redirectUri={oauthConfig?.redirectUri ?? DEFAULT_REDIRECT_URI}
-              />
-            </div>
-          </details>
+          <Disclosure
+            summary={configured ? "Editar credenciales de Google" : "Credenciales de Google"}
+            defaultOpen={!configured}
+          >
+            <GoogleOAuthConfigForm
+              clientId={oauthConfig?.clientId ?? ""}
+              redirectUri={oauthConfig?.redirectUri ?? DEFAULT_REDIRECT_URI}
+            />
+          </Disclosure>
         </Card>
 
         <Card title="Widgets del dashboard" className="lg:col-span-2">
@@ -269,18 +268,16 @@ export default async function AjustesPage({
             )}
           </div>
 
-          <details className="text-sm" open={!msConfigured}>
-            <summary className="cursor-pointer text-muted hover:text-foreground select-none">
-              {msConfigured ? "Editar credenciales de Microsoft" : "Credenciales de Microsoft"}
-            </summary>
-            <div className="mt-3">
-              <MicrosoftOAuthConfigForm
-                clientId={msOauthConfig?.clientId ?? ""}
-                tenantId={msOauthConfig?.tenantId ?? DEFAULT_MICROSOFT_TENANT}
-                redirectUri={msOauthConfig?.redirectUri ?? DEFAULT_MICROSOFT_REDIRECT_URI}
-              />
-            </div>
-          </details>
+          <Disclosure
+            summary={msConfigured ? "Editar credenciales de Microsoft" : "Credenciales de Microsoft"}
+            defaultOpen={!msConfigured}
+          >
+            <MicrosoftOAuthConfigForm
+              clientId={msOauthConfig?.clientId ?? ""}
+              tenantId={msOauthConfig?.tenantId ?? DEFAULT_MICROSOFT_TENANT}
+              redirectUri={msOauthConfig?.redirectUri ?? DEFAULT_MICROSOFT_REDIRECT_URI}
+            />
+          </Disclosure>
         </Card>
       </Cascade>
     </div>
