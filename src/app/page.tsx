@@ -161,7 +161,7 @@ export default async function DashboardPage() {
     ),
     activity: (
       <Card title="Mapa de actividad" className="lg:col-span-3">
-        <ActivityHeatmap counts={activityCounts} />
+        <ActivityHeatmap counts={Array.from(activityCounts.entries())} />
       </Card>
     ),
     taskKpis: (

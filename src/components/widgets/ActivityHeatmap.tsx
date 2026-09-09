@@ -1,4 +1,7 @@
-import { claveDiaLocal } from "@/lib/activity";
+"use client";
+
+import { useReducedMotion } from "motion/react";
+import { useWelcomeGate } from "@/components/WelcomeOverlay";
 
 const CELDA = 11;
 const HUECO = 3;
@@ -27,6 +30,16 @@ const COLOR_NIVEL = [
   "color-mix(in srgb, var(--accent) 78%, var(--surface-2))",
   "var(--accent)",
 ];
+
+/** Duplicado a propósito de `claveDiaLocal` en `src/lib/activity.ts`: ese
+ * módulo importa Prisma a nivel de fichero, y este componente es de cliente
+ * — importar de allí metería Prisma en el bundle del navegador. */
+function claveDiaLocal(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 type Dia = { fecha: Date; cuenta: number; futuro: boolean };
 
@@ -65,9 +78,20 @@ function construirSemanas(cuentas: Map<string, number>): Dia[][] {
  * Mapa de calor de actividad (tareas completadas + hábitos marcados) de las
  * últimas ~53 semanas, estilo GitHub: una columna por semana, un cuadrito por
  * día, teñido según cuánto se hizo ese día.
+ *
+ * Recibe `counts` como array de pares (no `Map`) porque tiene que cruzar el
+ * límite servidor→cliente como prop de un Server Component: un `Map` no es
+ * un dato "plano". Las columnas aparecen escalonadas de izquierda a derecha
+ * la primera vez que se ven (`useWelcomeGate`), respetando "reducir
+ * movimiento".
  */
-export default function ActivityHeatmap({ counts }: { counts: Map<string, number> }) {
-  const semanas = construirSemanas(counts);
+export default function ActivityHeatmap({ counts }: { counts: [string, number][] }) {
+  const puedeAnimar = useWelcomeGate();
+  const reduceMotion = useReducedMotion();
+  const anima = puedeAnimar && !reduceMotion;
+
+  const mapa = new Map(counts);
+  const semanas = construirSemanas(mapa);
   const ancho = semanas.length * PASO;
   const alto = ETIQUETA_ALTO + 7 * PASO;
 
@@ -82,7 +106,7 @@ export default function ActivityHeatmap({ counts }: { counts: Map<string, number
     }
   });
 
-  const total = Array.from(counts.values()).reduce((a, b) => a + b, 0);
+  const total = counts.reduce((a, [, c]) => a + c, 0);
 
   return (
     <div className="overflow-x-auto">
@@ -103,11 +127,13 @@ export default function ActivityHeatmap({ counts }: { counts: Map<string, number
                 height={CELDA}
                 rx={2.5}
                 fill={dia.futuro ? "transparent" : COLOR_NIVEL[nivel(dia.cuenta)]}
-                style={
-                  !dia.futuro && nivel(dia.cuenta) === 4
-                    ? { filter: "drop-shadow(0 0 3px var(--accent-glow))" }
-                    : undefined
-                }
+                className={!dia.futuro && anima ? "heatmap-cell" : undefined}
+                style={{
+                  opacity: dia.futuro ? undefined : anima ? undefined : puedeAnimar ? 1 : 0,
+                  animationDelay: !dia.futuro && anima ? `${si * 9}ms` : undefined,
+                  filter:
+                    !dia.futuro && nivel(dia.cuenta) === 4 ? "drop-shadow(0 0 3px var(--accent-glow))" : undefined,
+                }}
               >
                 {!dia.futuro && (
                   // <title> solo acepta un único string como hijo — con varias
