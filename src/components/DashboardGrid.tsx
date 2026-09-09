@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { updateDashboardLayout } from "@/lib/actions";
+import { useWelcomeGate } from "@/components/WelcomeOverlay";
 import { WIDGET_SPANS, type WidgetKey, type WidgetLayoutItem } from "@/lib/dashboardWidgets";
 
 export default function DashboardGrid({
@@ -19,6 +20,7 @@ export default function DashboardGrid({
   const [, startTransition] = useTransition();
   const dragIndex = useRef<number | null>(null);
   const reduceMotion = useReducedMotion();
+  const puedeAnimar = useWelcomeGate();
 
   function persist(next: WidgetLayoutItem[]) {
     setItems(next);
@@ -86,9 +88,12 @@ export default function DashboardGrid({
             key={item.key}
             // Entrada en cascada: cada tarjeta aparece un pelín después que la
             // anterior. El retardo se corta a los 6 elementos para que un
-            // dashboard lleno no tarde un segundo entero en montarse.
+            // dashboard lleno no tarde un segundo entero en montarse. No
+            // arranca hasta que el saludo de bienvenida termina (`useWelcomeGate`):
+            // si va a la vez, la cascada acaba oculta detrás del overlay y no
+            // da tiempo a verla.
             initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={reduceMotion || puedeAnimar ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
             transition={{
               duration: 0.45,
               delay: Math.min(index, 6) * 0.07,

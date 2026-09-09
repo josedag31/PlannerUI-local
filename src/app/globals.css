@@ -70,6 +70,21 @@ body {
   border-radius: 1rem;
 }
 
+/* El overlay de bienvenida se sirve siempre en el HTML, oculto por defecto.
+   Un script bloqueante en <head> (antes de que se pinte nada del body) marca
+   <html> si es la primera vez en la sesión, y solo entonces esta regla lo
+   muestra — así no hay un instante intermedio en el que se vea el planner
+   sin el saludo delante. Fuera de esa fase inicial, React manda con estilo
+   en línea (que siempre gana sobre esto). */
+.welcome-overlay {
+  opacity: 0;
+  pointer-events: none;
+}
+html[data-welcome-pending="1"] .welcome-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* Texto apagado con una banda de luz que lo recorre. Es el efecto del saludo
    de bienvenida: el degradado se recorta sobre las letras y se desplaza. */
 .text-shimmer {
