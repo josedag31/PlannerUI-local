@@ -12,6 +12,7 @@ import QuickAddHabit from "@/components/widgets/QuickAddHabit";
 import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
 import ClockWidget from "@/components/widgets/ClockWidget";
+import CountdownRing from "@/components/widgets/CountdownRing";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected, getAccountsNeedingReconnect } from "@/lib/google";
 import ReconnectBanner from "@/components/ReconnectBanner";
@@ -86,6 +87,23 @@ export default async function DashboardPage() {
   );
   const externalGoogleEvents = googleEvents.filter((e) => !syncedGoogleEventIds.has(e.id));
 
+  // El más cercano de exámenes/eventos (no tareas) para el anillo de cuenta
+  // atrás — mismo universo que la tarjeta "Próximos eventos", solo que aquí
+  // interesa únicamente el primero.
+  const proximo = [
+    ...upcomingExams.map((e: (typeof upcomingExams)[number]) => ({
+      title: `Examen ${e.subject.name}`,
+      date: e.date,
+      color: sectionColors.STUDY,
+    })),
+    ...upcomingEvents.map((e: (typeof upcomingEvents)[number]) => ({
+      title: e.title,
+      date: e.date,
+      color: sectionColors[e.section],
+    })),
+    ...externalGoogleEvents.map((e) => ({ title: e.title, date: e.date, color: "#4285F4" })),
+  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
   const weekItems = [
     ...weekTasks.filter((t: (typeof weekTasks)[number]) => t.dueDate).map((t: (typeof weekTasks)[number]) => ({
       id: `task-${t.id}`,
@@ -119,6 +137,15 @@ export default async function DashboardPage() {
     week: (
       <Card title="Semana" className="lg:col-span-3">
         <WeekView items={weekItems} />
+      </Card>
+    ),
+    countdown: (
+      <Card title="Próximo">
+        {proximo ? (
+          <CountdownRing title={proximo.title} date={proximo.date} color={proximo.color} />
+        ) : (
+          <p className="text-sm text-muted py-8 text-center">Sin exámenes ni eventos próximos.</p>
+        )}
       </Card>
     ),
     tasks: (
