@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
+import Cascade from "@/components/Cascade";
 import DeleteButton from "@/components/DeleteButton";
 import TaskList from "@/components/widgets/TaskList";
 import QuickAddTask from "@/components/widgets/QuickAddTask";
@@ -69,7 +70,7 @@ export default async function EstudiosPage() {
         <p className="text-sm text-muted mt-1">Asignaturas, exámenes y tareas de la carrera.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Cascade className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card title="Asignaturas" className="lg:col-span-1">
           <ul className="space-y-2 mb-3">
             {subjects.length === 0 && <p className="text-sm text-muted">Sin asignaturas todavía.</p>}
@@ -142,7 +143,7 @@ export default async function EstudiosPage() {
             para que tus tareas/exámenes se sincronicen con un calendario y los veas aquí.
           </p>
         )}
-      </div>
+      </Cascade>
     </div>
   );
 }

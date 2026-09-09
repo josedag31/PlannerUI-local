@@ -9,6 +9,7 @@
   --muted: #8a8a8f;
   --accent: #baff29;
   --accent-dim: #7ea01a;
+  --accent-glow: rgba(186, 255, 41, 0.45);
   --danger: #ff4d4f;
   --study: #5eb8ff;
   --arus: #ff6b3d;
@@ -68,4 +69,173 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
+}
+
+/* El overlay de bienvenida se sirve siempre en el HTML, oculto por defecto.
+   Un script bloqueante en <head> (antes de que se pinte nada del body) marca
+   <html> si es la primera vez en la sesión, y solo entonces esta regla lo
+   muestra — así no hay un instante intermedio en el que se vea el planner
+   sin el saludo delante. Fuera de esa fase inicial, React manda con estilo
+   en línea (que siempre gana sobre esto). */
+.welcome-overlay {
+  opacity: 0;
+  pointer-events: none;
+}
+html[data-welcome-pending="1"] .welcome-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Texto apagado con una banda de luz que lo recorre. Es el efecto del saludo
+   de bienvenida: el degradado se recorta sobre las letras y se desplaza. */
+.text-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--muted) 30%,
+    var(--foreground) 45%,
+    var(--accent) 50%,
+    var(--foreground) 55%,
+    var(--muted) 70%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-sweep 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes shimmer-sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* Entrada en cascada para los hijos directos de cualquier grid envuelto en
+   <Cascade> (Estudios, ARUS, Personal, Ajustes...): cada tarjeta aparece un
+   pelín después que la anterior, igual que en el dashboard principal
+   (`DashboardGrid`, que usa Motion en vez de esto porque además necesita
+   reordenarse por arrastre). Mientras `.cascade-pending` esté puesto —
+   saludo de bienvenida en pantalla, ver `useWelcomeGate()` — las tarjetas
+   quedan invisibles en vez de animarse detrás de él. */
+.cascade-pending > * {
+  opacity: 0;
+}
+.cascade-play > * {
+  animation: cascade-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.cascade-play > *:nth-child(1) { animation-delay: 0ms; }
+.cascade-play > *:nth-child(2) { animation-delay: 70ms; }
+.cascade-play > *:nth-child(3) { animation-delay: 140ms; }
+.cascade-play > *:nth-child(4) { animation-delay: 210ms; }
+.cascade-play > *:nth-child(5) { animation-delay: 280ms; }
+.cascade-play > *:nth-child(6) { animation-delay: 350ms; }
+.cascade-play > *:nth-child(n + 7) { animation-delay: 420ms; }
+
+@keyframes cascade-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bloques grises que ocupan el hueco mientras llegan los datos. */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  border-radius: 0.5rem;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0% 50%;
+  }
+}
+
+/* Sistema visual: acento con glow para barras/anillos de progreso, y
+   tipografía de KPI (número enorme + etiqueta pequeña) para las tarjetas de
+   estadísticas de las próximas tareas (semana vs. anterior, rachas...). */
+.progress-fill {
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  box-shadow: 0 0 6px 1px var(--accent-glow), 0 0 16px 2px var(--accent-glow);
+}
+
+.kpi-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Texto con halo del acento — para números "vivos" (el reloj) donde además
+   de la tipografía de KPI interesa el mismo glow que las barras/anillos. Va
+   después de .kpi-value a propósito: pisa su color por defecto. */
+.glow-text {
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent-glow), 0 0 28px var(--accent-glow);
+}
+
+/* Revelado en ola de las celdas del mapa de calor: cada columna (semana)
+   aparece un poco después que la anterior, con un crecimiento suave además
+   del fundido — así se lee como una ola lenta cruzando de izquierda a
+   derecha, no como un simple parpadeo. El retardo por columna se calcula en
+   línea en ActivityHeatmap.tsx (depende de en qué columna esté cada celda).
+   `transform-box: fill-box` hace que la escala se centre en cada cuadrito
+   (un <rect> de SVG no tiene por defecto un origen de transformación útil). */
+.heatmap-cell {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: heatmap-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes heatmap-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Quien tenga activado "reducir movimiento" en su sistema ve el resultado
+   final, sin barridos ni pulsos. */
+@media (prefers-reduced-motion: reduce) {
+  .text-shimmer {
+    animation: none;
+    background: none;
+    color: var(--foreground);
+  }
+  .skeleton {
+    animation: none;
+  }
+  .cascade-pending > *,
+  .cascade-play > * {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .heatmap-cell {
+    animation: none;
+  }
 }

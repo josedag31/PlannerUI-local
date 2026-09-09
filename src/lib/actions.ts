@@ -332,12 +332,14 @@ export async function deleteNote(id: string) {
 export async function updateAppSettings(formData: FormData) {
   const appName = String(formData.get("appName") ?? "").trim();
   const tagline = String(formData.get("tagline") ?? "").trim();
+  // Vacío significa "salúdame sin nombre", así que se guarda null en vez de "".
+  const userName = String(formData.get("userName") ?? "").trim() || null;
   if (!appName) return;
 
   await prisma.appSettings.upsert({
     where: { id: 1 },
-    update: { appName, tagline },
-    create: { id: 1, appName, tagline },
+    update: { appName, tagline, userName },
+    create: { id: 1, appName, tagline, userName },
   });
   revalidatePath("/", "layout");
 }

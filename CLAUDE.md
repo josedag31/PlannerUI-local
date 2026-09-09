@@ -21,6 +21,14 @@ sincronizarlos.
   cambio de esquema, pero **avisar antes** de publicar una migración que borre
   o renombre columnas o tablas con datos dentro.
 
+## Nada personalizable se escribe a fuego
+
+El planner está pensado para publicarse y que lo use más gente, no solo él.
+Cualquier dato que dependa de la persona —nombre para el saludo, nombres y
+colores de las secciones, qué widgets se ven, pesos de una métrica, carpetas—
+va a **Ajustes** y se guarda en la BBDD, con un valor por defecto sensato.
+Nunca su nombre, sus cuentas ni sus rutas dentro del código.
+
 ## Los cambios se prueban en `npm run dev`, no en el `.exe`
 
 El `.exe` instalado es su herramienta de uso diario. **No se reconstruye ni se

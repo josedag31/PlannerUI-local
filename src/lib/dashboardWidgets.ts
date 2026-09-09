@@ -4,6 +4,10 @@
 
 export const WIDGET_KEYS = [
   "week",
+  "activity",
+  "taskKpis",
+  "countdown",
+  "taskCountdown",
   "tasks",
   "events",
   "habits",
@@ -19,6 +23,10 @@ export type WidgetKey = (typeof WIDGET_KEYS)[number];
 
 export const WIDGET_TITLES: Record<WidgetKey, string> = {
   week: "Semana",
+  activity: "Mapa de actividad",
+  taskKpis: "KPIs de tareas",
+  countdown: "Próximo",
+  taskCountdown: "Próxima tarea",
   tasks: "Tareas pendientes",
   events: "Próximos eventos",
   habits: "Hábitos",
@@ -33,6 +41,10 @@ export const WIDGET_TITLES: Record<WidgetKey, string> = {
 /** Tailwind col-span classes applied to each widget's grid cell (independent of drag order). */
 export const WIDGET_SPANS: Record<WidgetKey, string> = {
   week: "lg:col-span-3",
+  activity: "lg:col-span-3",
+  taskKpis: "lg:col-span-3",
+  countdown: "",
+  taskCountdown: "",
   tasks: "lg:col-span-2",
   events: "",
   habits: "",

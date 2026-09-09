@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
+import Cascade from "@/components/Cascade";
 import TaskList from "@/components/widgets/TaskList";
 import QuickAddTask from "@/components/widgets/QuickAddTask";
 import HabitTracker from "@/components/widgets/HabitTracker";
@@ -56,7 +57,7 @@ export default async function PersonalPage() {
         <p className="text-sm text-muted mt-1">Hábitos, objetivos y vida fuera de la carrera.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Cascade className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card title="Tareas" className="lg:col-span-2">
           <QuickAddTask section="PERSONAL" />
           <TaskList tasks={tasks} />
@@ -86,7 +87,7 @@ export default async function PersonalPage() {
         <Card title="Notas" className="lg:col-span-3">
           <NotesBoard notes={notes} section="PERSONAL" />
         </Card>
-      </div>
+      </Cascade>
     </div>
   );
 }
