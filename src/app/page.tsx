@@ -13,6 +13,8 @@ import QuickAddGoal from "@/components/widgets/QuickAddGoal";
 import QuickAddEvent from "@/components/widgets/QuickAddEvent";
 import ClockWidget from "@/components/widgets/ClockWidget";
 import CountdownRing from "@/components/widgets/CountdownRing";
+import ActivityHeatmap from "@/components/widgets/ActivityHeatmap";
+import { getActivityCounts } from "@/lib/activity";
 import { getSettings } from "@/lib/settings";
 import { isGoogleConnected, getAccountsNeedingReconnect } from "@/lib/google";
 import ReconnectBanner from "@/components/ReconnectBanner";
@@ -61,26 +63,28 @@ export default async function DashboardPage() {
   const weekAhead = new Date(today);
   weekAhead.setDate(weekAhead.getDate() + 7);
 
-  const [pendingTasks, habits, goals, upcomingEvents, upcomingExams, weekTasks, nextTaskDue] = await Promise.all([
-    prisma.task.findMany({
-      where: { done: false },
-      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
-      take: 8,
-      include: { subject: true },
-    }),
-    prisma.habit.findMany({
-      where: { archived: false },
-      include: { logs: { orderBy: { date: "desc" }, take: 30 } },
-    }),
-    prisma.goal.findMany({ where: { archived: false }, orderBy: { createdAt: "desc" } }),
-    prisma.eventCountdown.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6 }),
-    prisma.exam.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6, include: { subject: true } }),
-    prisma.task.findMany({ where: { done: false, dueDate: { gte: today, lte: weekAhead } }, include: { subject: true } }),
-    // Consulta propia (no basta con el primero de pendingTasks): esa lista
-    // ordena nulls-last de forma implícita y no garantiza que la primera
-    // fecha no nula sea la más próxima.
-    prisma.task.findFirst({ where: { done: false, dueDate: { not: null } }, orderBy: { dueDate: "asc" } }),
-  ]);
+  const [pendingTasks, habits, goals, upcomingEvents, upcomingExams, weekTasks, nextTaskDue, activityCounts] =
+    await Promise.all([
+      prisma.task.findMany({
+        where: { done: false },
+        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        take: 8,
+        include: { subject: true },
+      }),
+      prisma.habit.findMany({
+        where: { archived: false },
+        include: { logs: { orderBy: { date: "desc" }, take: 30 } },
+      }),
+      prisma.goal.findMany({ where: { archived: false }, orderBy: { createdAt: "desc" } }),
+      prisma.eventCountdown.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6 }),
+      prisma.exam.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6, include: { subject: true } }),
+      prisma.task.findMany({ where: { done: false, dueDate: { gte: today, lte: weekAhead } }, include: { subject: true } }),
+      // Consulta propia (no basta con el primero de pendingTasks): esa lista
+      // ordena nulls-last de forma implícita y no garantiza que la primera
+      // fecha no nula sea la más próxima.
+      prisma.task.findFirst({ where: { done: false, dueDate: { not: null } }, orderBy: { dueDate: "asc" } }),
+      getActivityCounts(),
+    ]);
 
   // Google Calendar events that already correspond to a local task/exam/event
   // (created via sync) are excluded here to avoid showing the same thing twice.
@@ -141,6 +145,11 @@ export default async function DashboardPage() {
     week: (
       <Card title="Semana" className="lg:col-span-3">
         <WeekView items={weekItems} />
+      </Card>
+    ),
+    activity: (
+      <Card title="Mapa de actividad" className="lg:col-span-3">
+        <ActivityHeatmap counts={activityCounts} />
       </Card>
     ),
     countdown: (
