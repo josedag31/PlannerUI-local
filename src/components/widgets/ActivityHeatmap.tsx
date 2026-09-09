@@ -110,10 +110,13 @@ export default function ActivityHeatmap({ counts }: { counts: Map<string, number
                 }
               >
                 {!dia.futuro && (
+                  // <title> solo acepta un único string como hijo — con varias
+                  // expresiones JSX seguidas (fecha, separador, texto) React
+                  // avisa de que no sabe convertir el array a texto.
                   <title>
-                    {dia.fecha.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                    {" — "}
-                    {dia.cuenta === 0 ? "sin actividad" : `${dia.cuenta} ${dia.cuenta === 1 ? "cosa hecha" : "cosas hechas"}`}
+                    {`${dia.fecha.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })} — ${
+                      dia.cuenta === 0 ? "sin actividad" : `${dia.cuenta} ${dia.cuenta === 1 ? "cosa hecha" : "cosas hechas"}`
+                    }`}
                   </title>
                 )}
               </rect>
