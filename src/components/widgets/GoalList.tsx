@@ -38,7 +38,7 @@ export default function GoalList({ goals }: { goals: GoalItem[] }) {
           </div>
           <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
             <div
-              className="h-full bg-accent transition-all"
+              className="h-full progress-fill rounded-full transition-all"
               style={{ width: `${goal.progress}%` }}
             />
           </div>

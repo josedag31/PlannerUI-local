@@ -9,6 +9,7 @@
   --muted: #8a8a8f;
   --accent: #baff29;
   --accent-dim: #7ea01a;
+  --accent-glow: rgba(186, 255, 41, 0.45);
   --danger: #ff4d4f;
   --study: #5eb8ff;
   --arus: #ff6b3d;
@@ -159,6 +160,30 @@ html[data-welcome-pending="1"] .welcome-overlay {
   to {
     background-position: 0% 50%;
   }
+}
+
+/* Sistema visual: acento con glow para barras/anillos de progreso, y
+   tipografía de KPI (número enorme + etiqueta pequeña) para las tarjetas de
+   estadísticas de las próximas tareas (semana vs. anterior, rachas...). */
+.progress-fill {
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  box-shadow: 0 0 8px 0 var(--accent-glow);
+}
+
+.kpi-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
 /* Quien tenga activado "reducir movimiento" en su sistema ve el resultado
