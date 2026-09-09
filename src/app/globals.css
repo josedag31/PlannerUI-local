@@ -194,20 +194,27 @@ html[data-welcome-pending="1"] .welcome-overlay {
   text-shadow: 0 0 12px var(--accent-glow), 0 0 28px var(--accent-glow);
 }
 
-/* Revelado escalonado de las celdas del mapa de calor: cada columna (semana)
-   aparece un poco después que la anterior. El retardo por columna se calcula
-   en línea en ActivityHeatmap.tsx (depende de en qué columna esté cada
-   celda), aquí solo el fundido en sí. */
+/* Revelado en ola de las celdas del mapa de calor: cada columna (semana)
+   aparece un poco después que la anterior, con un crecimiento suave además
+   del fundido — así se lee como una ola lenta cruzando de izquierda a
+   derecha, no como un simple parpadeo. El retardo por columna se calcula en
+   línea en ActivityHeatmap.tsx (depende de en qué columna esté cada celda).
+   `transform-box: fill-box` hace que la escala se centre en cada cuadrito
+   (un <rect> de SVG no tiene por defecto un origen de transformación útil). */
 .heatmap-cell {
-  animation: heatmap-in 0.5s ease-out both;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: heatmap-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes heatmap-in {
   from {
     opacity: 0;
+    transform: scale(0.4);
   }
   to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 

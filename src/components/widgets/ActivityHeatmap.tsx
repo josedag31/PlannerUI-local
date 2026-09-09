@@ -1,13 +1,17 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
-import { useWelcomeGate } from "@/components/WelcomeOverlay";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 
 const CELDA = 11;
 const HUECO = 3;
 const PASO = CELDA + HUECO;
 const ETIQUETA_ALTO = 16;
 const SEMANAS = 53;
+// Retardo entre columnas de la ola: con 53 semanas y este valor el barrido
+// completo tarda ~2,6s (53 * RETARDO_COLUMNA_MS + duración de una celda) —
+// tiene que leerse como una ola lenta cruzando de lado a lado, no como un
+// parpadeo.
+const RETARDO_COLUMNA_MS = 32;
 
 const MESES = [
   "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic",
@@ -81,14 +85,14 @@ function construirSemanas(cuentas: Map<string, number>): Dia[][] {
  *
  * Recibe `counts` como array de pares (no `Map`) porque tiene que cruzar el
  * límite servidor→cliente como prop de un Server Component: un `Map` no es
- * un dato "plano". Las columnas aparecen escalonadas de izquierda a derecha
- * la primera vez que se ven (`useWelcomeGate`), respetando "reducir
- * movimiento".
+ * un dato "plano". No arranca hasta que el propio mapa entra en el viewport
+ * (`useRevealOnView`), y entonces las columnas se revelan como una ola lenta
+ * de izquierda a derecha, respetando "reducir movimiento". El SVG ocupa
+ * siempre el ancho completo del hueco disponible (escala uniforme por
+ * `viewBox`, sin `width`/`height` fijos).
  */
 export default function ActivityHeatmap({ counts }: { counts: [string, number][] }) {
-  const puedeAnimar = useWelcomeGate();
-  const reduceMotion = useReducedMotion();
-  const anima = puedeAnimar && !reduceMotion;
+  const { ref, listo, anima } = useRevealOnView<HTMLDivElement>(counts);
 
   const mapa = new Map(counts);
   const semanas = construirSemanas(mapa);
@@ -109,47 +113,45 @@ export default function ActivityHeatmap({ counts }: { counts: [string, number][]
   const total = counts.reduce((a, [, c]) => a + c, 0);
 
   return (
-    <div className="overflow-x-auto">
-      <div className="inline-block min-w-full">
-        <svg viewBox={`0 0 ${ancho} ${alto}`} width={ancho} height={alto} className="block">
-          {etiquetasMes.map((e) => (
-            <text key={e.x} x={e.x} y={11} className="fill-muted" style={{ fontSize: 9 }}>
-              {e.texto}
-            </text>
-          ))}
-          {semanas.map((semana, si) =>
-            semana.map((dia, di) => (
-              <rect
-                key={`${si}-${di}`}
-                x={si * PASO}
-                y={ETIQUETA_ALTO + di * PASO}
-                width={CELDA}
-                height={CELDA}
-                rx={2.5}
-                fill={dia.futuro ? "transparent" : COLOR_NIVEL[nivel(dia.cuenta)]}
-                className={!dia.futuro && anima ? "heatmap-cell" : undefined}
-                style={{
-                  opacity: dia.futuro ? undefined : anima ? undefined : puedeAnimar ? 1 : 0,
-                  animationDelay: !dia.futuro && anima ? `${si * 9}ms` : undefined,
-                  filter:
-                    !dia.futuro && nivel(dia.cuenta) === 4 ? "drop-shadow(0 0 3px var(--accent-glow))" : undefined,
-                }}
-              >
-                {!dia.futuro && (
-                  // <title> solo acepta un único string como hijo — con varias
-                  // expresiones JSX seguidas (fecha, separador, texto) React
-                  // avisa de que no sabe convertir el array a texto.
-                  <title>
-                    {`${dia.fecha.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })} — ${
-                      dia.cuenta === 0 ? "sin actividad" : `${dia.cuenta} ${dia.cuenta === 1 ? "cosa hecha" : "cosas hechas"}`
-                    }`}
-                  </title>
-                )}
-              </rect>
-            ))
-          )}
-        </svg>
-      </div>
+    <div ref={ref}>
+      <svg viewBox={`0 0 ${ancho} ${alto}`} width="100%" className="block h-auto">
+        {etiquetasMes.map((e) => (
+          <text key={e.x} x={e.x} y={11} className="fill-muted" style={{ fontSize: 9 }}>
+            {e.texto}
+          </text>
+        ))}
+        {semanas.map((semana, si) =>
+          semana.map((dia, di) => (
+            <rect
+              key={`${si}-${di}`}
+              x={si * PASO}
+              y={ETIQUETA_ALTO + di * PASO}
+              width={CELDA}
+              height={CELDA}
+              rx={2.5}
+              fill={dia.futuro ? "transparent" : COLOR_NIVEL[nivel(dia.cuenta)]}
+              className={!dia.futuro && anima ? "heatmap-cell" : undefined}
+              style={{
+                opacity: dia.futuro ? undefined : anima ? undefined : listo ? 1 : 0,
+                animationDelay: !dia.futuro && anima ? `${si * RETARDO_COLUMNA_MS}ms` : undefined,
+                filter:
+                  !dia.futuro && nivel(dia.cuenta) === 4 ? "drop-shadow(0 0 3px var(--accent-glow))" : undefined,
+              }}
+            >
+              {!dia.futuro && (
+                // <title> solo acepta un único string como hijo — con varias
+                // expresiones JSX seguidas (fecha, separador, texto) React
+                // avisa de que no sabe convertir el array a texto.
+                <title>
+                  {`${dia.fecha.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })} — ${
+                    dia.cuenta === 0 ? "sin actividad" : `${dia.cuenta} ${dia.cuenta === 1 ? "cosa hecha" : "cosas hechas"}`
+                  }`}
+                </title>
+              )}
+            </rect>
+          ))
+        )}
+      </svg>
       <div className="flex items-center justify-between mt-2 text-xs text-muted">
         <span>{total === 0 ? "Sin actividad registrada todavía" : `${total} en el último año`}</span>
         <span className="flex items-center gap-1">
