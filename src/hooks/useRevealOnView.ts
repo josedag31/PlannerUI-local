@@ -24,10 +24,19 @@ export function useRevealOnView<E extends Element>(dep: unknown) {
   const reduceMotion = useReducedMotion();
   const [enVista, setEnVista] = useState(false);
 
-  useEffect(() => {
+  // "Ajustar estado cuando cambia una prop" durante el render, no en un
+  // efecto: es el patrón que recomienda React para esto exactamente
+  // (react.dev — "You Might Not Need An Effect"), y evita la vuelta extra de
+  // render+efecto que haría un `useEffect([dep]) { setEnVista(false) }`.
+  const [depAnterior, setDepAnterior] = useState(dep);
+  if (!Object.is(dep, depAnterior)) {
+    setDepAnterior(dep);
     setEnVista(false);
+  }
+
+  useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || enVista) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -39,8 +48,7 @@ export function useRevealOnView<E extends Element>(dep: unknown) {
     );
     observer.observe(el);
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dep]);
+  }, [enVista, dep]);
 
   const listo = puedeAnimar && enVista;
   const anima = listo && !reduceMotion;

@@ -52,7 +52,12 @@ export default function WelcomeOverlay({
 
   useEffect(() => {
     const pendiente = document.documentElement.hasAttribute("data-welcome-pending");
+    // No es el caso habitual que cubre esta regla ("derivar estado que ya se
+    // podía calcular en el render"): esto lee una marca puesta en el DOM por
+    // un script que corre antes de hidratar (ver comentario de arriba), y no
+    // hay forma de saber su valor durante el render — solo después de montar.
     if (!pendiente) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFase("oculto");
       return;
     }

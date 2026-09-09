@@ -6,6 +6,11 @@ export default function ClockWidget() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    // No se puede calcular en el render: la hora real solo se conoce en el
+    // cliente, y adelantarla en el primer render (con un inicializador
+    // perezoso) desajustaría el HTML del servidor del primer render del
+    // cliente — el mismo motivo por el que arranca en `null`.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date());
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);

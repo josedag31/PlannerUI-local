@@ -25,14 +25,13 @@ export default function CountUp({
   suffix?: string;
 }) {
   const { ref, listo, anima } = useRevealOnView<HTMLSpanElement>(value);
+  // Solo guarda el valor MIENTRAS se anima — el caso "sin animación" (aún no
+  // visible, o reducir movimiento) se calcula directo en el render de abajo,
+  // no vía setState en el efecto.
   const [mostrado, setMostrado] = useState(0);
 
   useEffect(() => {
-    if (!listo) return;
-    if (!anima) {
-      setMostrado(value);
-      return;
-    }
+    if (!listo || !anima) return;
     const controls = animate(0, value, {
       duration,
       delay,
@@ -42,9 +41,11 @@ export default function CountUp({
     return () => controls.stop();
   }, [listo, anima, value, duration, delay]);
 
+  const valorMostrado = !listo ? 0 : anima ? mostrado : value;
+
   return (
     <span ref={ref}>
-      {mostrado.toFixed(decimals)}
+      {valorMostrado.toFixed(decimals)}
       {suffix}
     </span>
   );
