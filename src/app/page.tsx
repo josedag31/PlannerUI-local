@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   const weekAhead = new Date(today);
   weekAhead.setDate(weekAhead.getDate() + 7);
 
-  const [pendingTasks, habits, goals, upcomingEvents, upcomingExams, weekTasks] = await Promise.all([
+  const [pendingTasks, habits, goals, upcomingEvents, upcomingExams, weekTasks, nextTaskDue] = await Promise.all([
     prisma.task.findMany({
       where: { done: false },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -76,6 +76,10 @@ export default async function DashboardPage() {
     prisma.eventCountdown.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6 }),
     prisma.exam.findMany({ where: { date: { gte: today } }, orderBy: { date: "asc" }, take: 6, include: { subject: true } }),
     prisma.task.findMany({ where: { done: false, dueDate: { gte: today, lte: weekAhead } }, include: { subject: true } }),
+    // Consulta propia (no basta con el primero de pendingTasks): esa lista
+    // ordena nulls-last de forma implícita y no garantiza que la primera
+    // fecha no nula sea la más próxima.
+    prisma.task.findFirst({ where: { done: false, dueDate: { not: null } }, orderBy: { dueDate: "asc" } }),
   ]);
 
   // Google Calendar events that already correspond to a local task/exam/event
@@ -145,6 +149,19 @@ export default async function DashboardPage() {
           <CountdownRing title={proximo.title} date={proximo.date} color={proximo.color} />
         ) : (
           <p className="text-sm text-muted py-8 text-center">Sin exámenes ni eventos próximos.</p>
+        )}
+      </Card>
+    ),
+    taskCountdown: (
+      <Card title="Próxima tarea">
+        {nextTaskDue?.dueDate ? (
+          <CountdownRing
+            title={nextTaskDue.title}
+            date={nextTaskDue.dueDate}
+            color={sectionColors[nextTaskDue.section]}
+          />
+        ) : (
+          <p className="text-sm text-muted py-8 text-center">Sin tareas con fecha.</p>
         )}
       </Card>
     ),
