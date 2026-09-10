@@ -1,6 +1,6 @@
 {
   "name": "locked-in-planner",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--use-system-ca next dev --port 3100",
