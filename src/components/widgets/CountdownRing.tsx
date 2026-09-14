@@ -154,7 +154,11 @@ export default function CountdownRing({
   return (
     <div ref={ref} className="flex flex-col items-center py-2">
       <div className="relative w-32 h-32">
-        <svg viewBox="0 0 120 120" className="w-32 h-32 -rotate-90">
+        {/* overflow-visible: por defecto un <svg> recorta todo lo que se
+            sale de su caja, y el drop-shadow del glow se salía un poco por
+            los bordes — sin esto, ese recorte se veía como una "estela
+            cuadrada" en vez de un halo redondo. */}
+        <svg viewBox="0 0 120 120" className="w-32 h-32 -rotate-90 overflow-visible">
           <circle cx="60" cy="60" r={RADIO_EXTERIOR} fill="none" stroke="var(--surface-2)" strokeWidth="8" />
           <circle
             ref={circleExtRef}
