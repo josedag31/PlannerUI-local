@@ -27,6 +27,18 @@ function diasHasta(date: Date) {
   return Math.round((d.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+/** Mismo criterio que CountdownList: medianoche en punto significa "sin hora
+ * concreta" (solo fecha), cualquier otra cosa es una hora real que enseñar. */
+function tieneHora(date: Date) {
+  const d = new Date(date);
+  return d.getHours() !== 0 || d.getMinutes() !== 0;
+}
+
+function horasHasta(date: Date) {
+  const ms = date.getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60)));
+}
+
 /**
  * Cuenta atrás en anillo para el próximo examen/evento (el más cercano de
  * todas las secciones). El trazo se llena según cuánto queda dentro de
@@ -43,6 +55,10 @@ function diasHasta(date: Date) {
  *
  * No arranca hasta que el propio anillo entra en el viewport (no basta con
  * que el saludo haya terminado) — `useRevealOnView`.
+ *
+ * Si el examen/evento/tarea tiene una hora concreta (no medianoche), se
+ * enseña junto a la fecha, y el mismo día del evento el número grande pasa
+ * de días (siempre 0) a horas restantes.
  */
 export default function CountdownRing({
   title,
@@ -59,8 +75,24 @@ export default function CountdownRing({
   const circleRef = useRef<SVGCircleElement>(null);
 
   const glow = hexToRgba(color, 0.55);
-  const numero = dias < 0 ? -dias : dias;
-  const etiqueta = dias < 0 ? "días tarde" : dias === 0 ? "hoy" : dias === 1 ? "mañana" : "días";
+  const conHora = tieneHora(date);
+  // "Hoy" a secas no dice si quedan 20 minutos o 20 horas — con hora
+  // concreta y todavía por llegar, el número grande pasa a ser la cuenta
+  // atrás en horas en vez del día (que ya vale 0 y no aporta nada más).
+  const horas = dias === 0 && conHora ? horasHasta(date) : null;
+  const numero = horas !== null ? horas : dias < 0 ? -dias : dias;
+  const etiqueta =
+    horas !== null
+      ? horas === 1
+        ? "hora"
+        : "horas"
+      : dias < 0
+        ? "días tarde"
+        : dias === 0
+          ? "hoy"
+          : dias === 1
+            ? "mañana"
+            : "días";
 
   useEffect(() => {
     const el = circleRef.current;
@@ -108,6 +140,7 @@ export default function CountdownRing({
       <p className="text-sm font-medium mt-3 text-center truncate max-w-[10rem]">{title}</p>
       <p className="text-xs text-muted mt-0.5">
         {new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}
+        {conHora && ` · ${new Date(date).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
       </p>
     </div>
   );
