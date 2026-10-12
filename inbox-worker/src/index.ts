@@ -1,15 +1,23 @@
 /**
  * Buzón del móvil para Locked In Planner.
  *
- * El atajo del iPhone deja aquí las tareas (POST /tasks) aunque el portátil
- * esté apagado. La app, al arrancar y cada poco mientras está abierta, las
- * recoge (GET /tasks), las guarda en su SQLite local y confirma (POST
- * /tasks/ack), y solo entonces se borran de aquí. La BBDD de verdad sigue
- * siendo la del portátil: esto es solo una sala de espera.
+ * Los atajos del iPhone dejan aquí tareas (POST /tasks) y eventos (POST
+ * /events) aunque el portátil esté apagado. La app, al arrancar y cada poco
+ * mientras está abierta, los recoge (GET /tasks, GET /events), los guarda en
+ * su SQLite local y confirma (POST /tasks/ack, /events/ack), y solo entonces
+ * se borran de aquí. La BBDD de verdad sigue siendo la del portátil: esto es
+ * solo una sala de espera.
  *
- * El buzón no interpreta nada (secciones, fechas, prioridades): guarda lo que
+ * El buzón apenas interpreta nada (secciones, prioridades): guarda lo que
  * llega y lo devuelve tal cual. Quien sabe cómo se llaman las secciones de
- * cada persona es la app.
+ * cada persona es la app. Lo único que valida es lo que haría inútil el
+ * envío (sin título, evento sin fecha), para que el fallo se vea en el móvil.
+ *
+ * Tareas y eventos van en la misma tabla, distinguidos por `kind` dentro del
+ * JSON. Lo guardado antes de existir los eventos no tiene `kind` y cuenta como
+ * tarea. GET /tasks devuelve SOLO tareas: así una app antigua (que solo conoce
+ * /tasks) nunca convierte un evento en tarea; los eventos esperan aquí hasta
+ * que se actualice.
  */
 
 export interface Env {
@@ -17,10 +25,12 @@ export interface Env {
   INBOX_TOKEN: string;
 }
 
+type Kind = "task" | "event";
+
 const MAX_TITULO = 500;
 const MAX_CAMPO = 100;
-/** Tope de tareas en espera: si alguien consiguiera el token, no podría
- * llenar la base gratuita. Con uso normal no se acerca ni de lejos. */
+/** Tope de cosas en espera: si alguien consiguiera el token, no podría llenar
+ * la base gratuita. Con uso normal no se acerca ni de lejos. */
 const MAX_PENDIENTES = 500;
 
 const json = (data: unknown, status = 200) =>
@@ -50,52 +60,88 @@ function campo(v: unknown): string | null {
   return s ? s.slice(0, MAX_CAMPO) : null;
 }
 
-async function crearTarea(req: Request, env: Env): Promise<Response> {
-  let body: Record<string, unknown>;
+/** Lo que la app sabe convertir en fecha: hoy/mañana, AAAA-MM-DD o ISO 8601. */
+function fechaValida(s: string): boolean {
+  const v = s.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+  if (["hoy", "today", "manana", "tomorrow"].includes(v)) return true;
+  return !Number.isNaN(Date.parse(s));
+}
+
+async function leerCuerpo(req: Request): Promise<Record<string, unknown> | null> {
   try {
-    body = await req.json();
+    const body = await req.json();
+    return body && typeof body === "object" ? (body as Record<string, unknown>) : null;
   } catch {
-    return fallo("El cuerpo tiene que ser JSON.", 400);
+    return null;
   }
+}
+
+async function guardar(env: Env, payload: Record<string, unknown>): Promise<string | Response> {
+  const { n } = (await env.DB.prepare("SELECT COUNT(*) AS n FROM pending").first<{ n: number }>()) ?? { n: 0 };
+  if (n >= MAX_PENDIENTES) return fallo("El buzón está lleno: abre el planner para vaciarlo.", 429);
+
+  const id = crypto.randomUUID();
+  await env.DB.prepare("INSERT INTO pending (id, payload, received_at) VALUES (?, ?, ?)")
+    .bind(id, JSON.stringify(payload), new Date().toISOString())
+    .run();
+  return id;
+}
+
+async function crearTarea(req: Request, env: Env): Promise<Response> {
+  const body = await leerCuerpo(req);
+  if (!body) return fallo("El cuerpo tiene que ser JSON.", 400);
 
   const titulo = typeof body.title === "string" ? body.title.trim() : "";
   if (!titulo) return fallo("Falta el título de la tarea.", 400);
 
-  const { n } = (await env.DB.prepare("SELECT COUNT(*) AS n FROM pending").first<{ n: number }>()) ?? { n: 0 };
-  if (n >= MAX_PENDIENTES) {
-    return fallo("El buzón está lleno: abre el planner para vaciarlo.", 429);
-  }
-
   const payload = {
+    kind: "task",
     title: titulo.slice(0, MAX_TITULO),
     section: campo(body.section),
     priority: campo(body.priority),
     due: campo(body.due),
   };
-  const id = crypto.randomUUID();
-  await env.DB.prepare("INSERT INTO pending (id, payload, received_at) VALUES (?, ?, ?)")
-    .bind(id, JSON.stringify(payload), new Date().toISOString())
-    .run();
-
+  const id = await guardar(env, payload);
+  if (id instanceof Response) return id;
   return json({ ok: true, id, mensaje: `Añadida: ${payload.title}` }, 201);
 }
 
-async function listarPendientes(env: Env): Promise<Response> {
+async function crearEvento(req: Request, env: Env): Promise<Response> {
+  const body = await leerCuerpo(req);
+  if (!body) return fallo("El cuerpo tiene que ser JSON.", 400);
+
+  const titulo = typeof body.title === "string" ? body.title.trim() : "";
+  if (!titulo) return fallo("Falta el título del evento.", 400);
+  const inicio = campo(body.start);
+  if (!inicio) return fallo("Falta la fecha del evento.", 400);
+  if (!fechaValida(inicio)) return fallo(`No entiendo la fecha "${inicio}".`, 400);
+
+  const payload = {
+    kind: "event",
+    title: titulo.slice(0, MAX_TITULO),
+    section: campo(body.section),
+    start: inicio,
+    duration: campo(body.duration),
+  };
+  const id = await guardar(env, payload);
+  if (id instanceof Response) return id;
+  return json({ ok: true, id, mensaje: `Evento añadido: ${payload.title}` }, 201);
+}
+
+async function listar(env: Env, kind: Kind): Promise<Response> {
   const { results } = await env.DB.prepare(
-    "SELECT id, payload, received_at FROM pending ORDER BY received_at LIMIT 200"
-  ).all<{ id: string; payload: string; received_at: string }>();
-  return json({
-    tasks: results.map((r) => ({ id: r.id, receivedAt: r.received_at, ...JSON.parse(r.payload) })),
-  });
+    "SELECT id, payload, received_at FROM pending " +
+      "WHERE coalesce(json_extract(payload, '$.kind'), 'task') = ? ORDER BY received_at LIMIT 200"
+  )
+    .bind(kind)
+    .all<{ id: string; payload: string; received_at: string }>();
+  const items = results.map((r) => ({ id: r.id, receivedAt: r.received_at, ...JSON.parse(r.payload) }));
+  return json(kind === "task" ? { tasks: items } : { events: items });
 }
 
 async function confirmar(req: Request, env: Env): Promise<Response> {
-  let ids: unknown;
-  try {
-    ({ ids } = await req.json<{ ids: unknown }>());
-  } catch {
-    return fallo("El cuerpo tiene que ser JSON.", 400);
-  }
+  const body = await leerCuerpo(req);
+  const ids = body?.ids;
   if (!Array.isArray(ids) || !ids.every((x) => typeof x === "string") || ids.length > 200) {
     return fallo("ids tiene que ser una lista de textos (máx. 200).", 400);
   }
@@ -116,8 +162,13 @@ export default {
     if (!(await autorizado(req, env))) return fallo("Token incorrecto.", 401);
 
     if (pathname === "/tasks" && req.method === "POST") return crearTarea(req, env);
-    if (pathname === "/tasks" && req.method === "GET") return listarPendientes(env);
-    if (pathname === "/tasks/ack" && req.method === "POST") return confirmar(req, env);
+    if (pathname === "/tasks" && req.method === "GET") return listar(env, "task");
+    if (pathname === "/events" && req.method === "POST") return crearEvento(req, env);
+    if (pathname === "/events" && req.method === "GET") return listar(env, "event");
+    // Los ids son únicos en toda la tabla: las dos rutas borran igual.
+    if ((pathname === "/tasks/ack" || pathname === "/events/ack") && req.method === "POST") {
+      return confirmar(req, env);
+    }
 
     return fallo("No existe.", 404);
   },
