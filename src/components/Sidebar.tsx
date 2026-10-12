@@ -64,6 +64,17 @@ export default function Sidebar({
           );
         })}
         <Link
+          href="/hechas"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            pathname === "/hechas"
+              ? "bg-surface-2 text-foreground"
+              : "text-muted hover:text-foreground hover:bg-surface-2/60"
+          }`}
+        >
+          <span style={{ color: pathname === "/hechas" ? "var(--accent)" : undefined }}>✓</span>
+          Hechas
+        </Link>
+        <Link
           href="/ajustes"
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             pathname === "/ajustes"
