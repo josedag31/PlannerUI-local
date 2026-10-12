@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import WelcomeOverlay from "@/components/WelcomeOverlay";
+import InboxSync from "@/components/InboxSync";
 import { getSettings } from "@/lib/settings";
 
 /** Decide si toca el saludo ANTES de que se pinte nada del body: sin esto, el
@@ -58,6 +59,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="decision-saludo" strategy="beforeInteractive">
           {SCRIPT_DECISION_SALUDO}
         </Script>
+        <InboxSync />
         <WelcomeOverlay userName={settings.userName}>
           <Sidebar appName={settings.appName} tagline={settings.tagline} sections={settings.sections} />
           <main className="flex-1 min-w-0 px-8 py-8 max-w-[1400px]">{children}</main>

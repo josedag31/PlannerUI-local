@@ -1,0 +1,6 @@
+# Token que tiene que mandar el atajo del iPhone (y la app) en la cabecera
+# Authorization: Bearer <token>. Solo para `npm run dev` en local; en
+# Cloudflare se guarda con `npx wrangler secret put INBOX_TOKEN`.
+# Genera uno largo y aleatorio, por ejemplo:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+INBOX_TOKEN=

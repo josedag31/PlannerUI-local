@@ -1,0 +1,19 @@
+{
+  "name": "planner-inbox",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--use-system-ca wrangler dev --port 8787",
+    "login": "cross-env NODE_OPTIONS=--use-system-ca wrangler login",
+    "db:create": "cross-env NODE_OPTIONS=--use-system-ca wrangler d1 create planner-inbox",
+    "db:local": "cross-env NODE_OPTIONS=--use-system-ca wrangler d1 execute planner-inbox --local --file=schema.sql",
+    "db:remote": "cross-env NODE_OPTIONS=--use-system-ca wrangler d1 execute planner-inbox --remote --file=schema.sql",
+    "secret": "cross-env NODE_OPTIONS=--use-system-ca wrangler secret put INBOX_TOKEN",
+    "deploy": "cross-env NODE_OPTIONS=--use-system-ca wrangler deploy",
+    "types": "cross-env NODE_OPTIONS=--use-system-ca wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261012.1",
+    "cross-env": "^10.1.0",
+    "wrangler": "^4.149.0"
+  }
+}

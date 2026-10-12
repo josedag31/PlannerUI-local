@@ -42,6 +42,9 @@ model Task {
   subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   googleEventId   String?
   outlookEventId  String?
+  // Id en el buzón del móvil si la tarea llegó desde el iPhone. Único: evita
+  // duplicarla si se recoge dos veces antes de confirmarla al buzón.
+  inboxId         String?   @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -189,4 +192,17 @@ model MicrosoftOAuthConfig {
   tenantId     String   @default("common")
   redirectUri  String   @default("http://localhost:3000/api/microsoft/callback")
   updatedAt    DateTime @updatedAt
+}
+
+// Buzón en la nube (Cloudflare Worker) donde el atajo del iPhone deja tareas
+// mientras el portátil está apagado. La app las recoge al arrancar. El token
+// vive aquí igual que las credenciales de Google: es de esta instalación, no
+// del código.
+model MobileInboxConfig {
+  id         Int       @id @default(1)
+  url        String
+  token      String
+  lastSyncAt DateTime?
+  lastError  String?
+  updatedAt  DateTime  @updatedAt
 }

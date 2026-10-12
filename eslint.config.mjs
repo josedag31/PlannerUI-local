@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     // como recurso, ninguno es código fuente del proyecto.
     "src-tauri/target/**",
     "src-tauri/resources/**",
+    // Buzón del móvil: proyecto aparte (Cloudflare Worker) con sus propios tipos.
+    "inbox-worker/**",
     // Script CommonJS que corre tal cual con node.exe dentro del .exe
     // empaquetado (sin build), fuera del proyecto TypeScript/ESM.
     "scripts/migrate-runtime.cjs",

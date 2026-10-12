@@ -8,6 +8,7 @@ import {
   GoogleOAuthConfigForm,
   MicrosoftOAuthConfigForm,
   DashboardAccountsForm,
+  MobileInboxForm,
 } from "@/components/widgets/SettingsForms";
 import {
   isGoogleConfigured,
@@ -114,6 +115,7 @@ export default async function AjustesPage({
   const msConnected = await isMicrosoftConnected();
   const msAccount = msConnected ? await prisma.microsoftAccount.findUnique({ where: { id: 1 } }) : null;
   const msOauthConfig = await getMicrosoftOAuthConfig();
+  const inbox = await prisma.mobileInboxConfig.findUnique({ where: { id: 1 } });
 
   return (
     <div className="space-y-6">
@@ -215,6 +217,19 @@ export default async function AjustesPage({
           />
         </Card>
 
+        <Card title="Tareas desde el móvil" className="lg:col-span-2">
+          <p className="text-xs text-muted mb-3">
+            Un atajo del iPhone deja las tareas en un buzón en la nube (tu propio Cloudflare Worker, carpeta
+            <code className="font-mono"> inbox-worker/</code>) y la app las recoge al abrirse y cada minuto mientras
+            está abierta, así que funciona aunque el portátil esté apagado. Pasos en el README del buzón.
+          </p>
+          <MobileInboxForm
+            url={inbox?.url ?? ""}
+            configured={Boolean(inbox)}
+            lastSyncAt={inbox?.lastSyncAt ?? null}
+            lastError={inbox?.lastError ?? null}
+          />
+        </Card>
         <Card title="Conexión con Microsoft (Outlook)" className="lg:col-span-2">
           {params.microsoft_connected && (
             <p className="text-xs text-accent mb-3">Cuenta de Microsoft conectada correctamente.</p>
