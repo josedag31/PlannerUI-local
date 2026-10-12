@@ -8,7 +8,7 @@ autor no tiene servidor, ni backend, ni cuenta de servicio: no existe ningún
 sistema suyo al que se puedan enviar datos.
 
 La única excepción es **opcional y la controla quien usa la app**: el buzón
-para añadir tareas desde el móvil (ver más abajo), que cada persona despliega
+para añadir tareas y eventos desde el móvil (ver más abajo), que cada persona despliega
 en su propia cuenta de Cloudflare.
 
 ## Qué datos se manejan
@@ -34,13 +34,13 @@ de base de datos SQLite en el propio ordenador:
 Ese fichero nunca sale del equipo. Los datos de Google se piden directamente a
 las APIs de Google desde la aplicación y se muestran en pantalla.
 
-## Tareas desde el móvil (opcional)
+## Tareas y eventos desde el móvil (opcional)
 
-Si lo activas, las tareas que añades desde el atajo del iPhone esperan en un
-buzón (un Cloudflare Worker) **desplegado en tu propia cuenta de Cloudflare**,
-hasta que la app las recoge. El buzón guarda solo esas tareas pendientes
-(título, sección, prioridad y fecha), y las borra en cuanto la app las ha
-guardado en tu ordenador. No recibe datos de Google ni nada más de la app, y
+Si lo activas, las tareas y eventos que añades desde los atajos del iPhone
+esperan en un buzón (un Cloudflare Worker) **desplegado en tu propia cuenta de
+Cloudflare**, hasta que la app los recoge. El buzón guarda solo lo pendiente
+(título, sección, fecha y prioridad o duración), y lo borra en cuanto la app
+lo ha guardado en tu ordenador. No recibe datos de Google ni nada más de la app, y
 el autor no tiene acceso a él. Si no lo configuras, no existe.
 
 ## Qué NO se hace

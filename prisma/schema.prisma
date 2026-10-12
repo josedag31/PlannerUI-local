@@ -110,6 +110,8 @@ model EventCountdown {
   durationMinutes Int?
   googleEventId   String?
   outlookEventId  String?
+  // Id en el buzón del móvil si el evento llegó desde el iPhone (ver Task.inboxId).
+  inboxId         String?  @unique
   createdAt       DateTime @default(now())
 }
 
