@@ -83,6 +83,8 @@ en el buscador de acciones. Acciones, en orden:
    - Cuerpo de la solicitud **JSON**, cuatro campos de tipo *Texto*:
      `title` = `Titulo`, `section` = `Seccion`, `priority` = `Prioridad`, `due` = `Fecha`.
 7. **Obtener valor del diccionario**: clave `mensaje` → **Mostrar notificación** con ese valor.
+   Si todo va bien sale *"Añadida: …"*; si falla (token incorrecto, buzón
+   lleno...), *"✕ No se ha añadido: …"* con el motivo.
 
 Después: **Centro de Control** → mantener pulsado → **Añadir un control** →
 **Atajos** → *Nueva tarea*. También funciona con *"Oye Siri, nueva tarea"* y

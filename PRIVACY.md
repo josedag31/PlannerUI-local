@@ -1,11 +1,15 @@
 # Política de privacidad — Locked In Planner
 
-**Última actualización: 31 de agosto de 2026**
+**Última actualización: 12 de octubre de 2026**
 
 Locked In Planner es una aplicación de escritorio de código abierto y de uso
-personal. Se ejecuta **por completo en el ordenador de quien la usa**. No hay
-servidor, ni backend, ni cuenta de servicio: no existe ningún sistema
-intermedio al que se puedan enviar datos.
+personal. Se ejecuta **por completo en el ordenador de quien la usa**. El
+autor no tiene servidor, ni backend, ni cuenta de servicio: no existe ningún
+sistema suyo al que se puedan enviar datos.
+
+La única excepción es **opcional y la controla quien usa la app**: el buzón
+para añadir tareas desde el móvil (ver más abajo), que cada persona despliega
+en su propia cuenta de Cloudflare.
 
 ## Qué datos se manejan
 
@@ -30,11 +34,21 @@ de base de datos SQLite en el propio ordenador:
 Ese fichero nunca sale del equipo. Los datos de Google se piden directamente a
 las APIs de Google desde la aplicación y se muestran en pantalla.
 
+## Tareas desde el móvil (opcional)
+
+Si lo activas, las tareas que añades desde el atajo del iPhone esperan en un
+buzón (un Cloudflare Worker) **desplegado en tu propia cuenta de Cloudflare**,
+hasta que la app las recoge. El buzón guarda solo esas tareas pendientes
+(título, sección, prioridad y fecha), y las borra en cuanto la app las ha
+guardado en tu ordenador. No recibe datos de Google ni nada más de la app, y
+el autor no tiene acceso a él. Si no lo configuras, no existe.
+
 ## Qué NO se hace
 
 - **No se envían datos a terceros.** No hay analítica, ni telemetría, ni
-  servicios externos de ningún tipo.
-- **No se comparten ni se venden datos.** No hay a quién: no existe servidor.
+  servicios externos más allá del buzón opcional en tu propia cuenta.
+- **No se comparten ni se venden datos.** No hay a quién: el autor no tiene
+  servidor.
 - **No se usan los datos para entrenar modelos** ni para publicidad.
 - **No se guarda el contenido de los correos.** Solo se leen para mostrarlos en
   el momento; no se copian a la base de datos.
@@ -46,7 +60,9 @@ borra sus tokens del equipo. También puedes revocar el permiso directamente en
 [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
 
 Para borrar todos los datos, basta con desinstalar la aplicación y eliminar la
-carpeta `%APPDATA%\app.lockedinplanner.desktop`.
+carpeta `%APPDATA%\app.lockedinplanner.desktop`. Si configuraste el buzón del
+móvil, bórralo también desde tu panel de Cloudflare (Worker `planner-inbox` y
+base D1 `planner-inbox`).
 
 ## Código fuente
 

@@ -9,7 +9,8 @@ cada sección se personalizan desde `/ajustes`, sin tocar código.
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - SQLite vía Prisma 7 (adaptador `@prisma/adapter-better-sqlite3`)
-- Todo corre en local, sin servidor externo
+- Todo corre en local, sin servidor externo. La única pieza en la nube es
+  opcional: el buzón para añadir tareas desde el móvil (ver más abajo)
 
 ## Puesta en marcha
 
@@ -36,6 +37,11 @@ Google* (cada base de datos guarda la suya).
 - **Estudios** (`/estudios`): asignaturas, exámenes, tareas y notas.
 - **ARUS** (`/arus`): tareas de equipo, reuniones/eventos, objetivos técnicos y notas.
 - **Personal** (`/personal`): tareas, hábitos, objetivos y notas de vida personal.
+- **Hechas** (`/hechas`): historial de tareas completadas, agrupado por semana
+  y día, con filtro por sección, buscador, si se hizo a tiempo y cuánto se
+  tardó desde que se apuntó. Las tareas borradas con la ✕ no aparecen (se
+  eliminan de verdad); las completadas sí, también las de antes de existir
+  esta página.
 
 Cada sección tiene su propia base de datos relacional (Prisma, ver
 `prisma/schema.prisma`): tareas, hábitos + registros diarios, objetivos con
@@ -201,6 +207,46 @@ En `/ajustes` → tarjeta "Conexión con Microsoft (Outlook)" → abre
 secret (Value). Deja el Tenant ID en `common` salvo que sepas que tu
 universidad exige uno específico. Guarda, y pulsa **Conectar**.
 
+## Tareas desde el móvil (opcional)
+
+Añade tareas desde el iPhone con un botón en el Centro de Control, "Oye Siri"
+o el botón de Acción, **aunque el ordenador esté apagado**: esperan en un
+buzón en la nube y el planner las recoge al abrirse (y cada minuto mientras
+está abierto).
+
+```
+iPhone (Atajo) ──▶ Buzón (tu Cloudflare Worker) ◀── Planner (al abrirse)
+```
+
+- El buzón es **tuyo**: lo despliegas en tu cuenta gratuita de Cloudflare. El
+  código está en [`inbox-worker/`](inbox-worker/README.md).
+- Solo guarda las tareas aún no recogidas (título, sección, prioridad y
+  fecha) y las borra en cuanto el planner las guarda. Tu base de datos sigue
+  siendo la local.
+- Una tarea que llega del móvil es igual que una creada en la app: si tiene
+  fecha, se crea también su evento en el calendario de la sección.
+
+### Configurarlo
+
+1. **Desplegar el buzón**: sigue [`inbox-worker/README.md`](inbox-worker/README.md)
+   (cuenta de Cloudflare → `npm run login` → base D1 → token → `npm run deploy`).
+   Te dará una URL del tipo `https://planner-inbox.<tu-subdominio>.workers.dev`.
+2. **Conectar el planner**: `/ajustes` → *Tareas desde el móvil* → pega la URL
+   y el token → **Guardar** → **Recoger ahora**. Debe decir *Conectado*.
+3. **Crear el atajo en el iPhone**: pasos exactos en
+   [`inbox-worker/README.md`](inbox-worker/README.md#el-atajo-del-iphone). Las
+   secciones del menú del atajo se escriben igual que en Ajustes (si alguna no
+   coincide, la tarea entra en Personal en vez de perderse).
+
+**Conecta el buzón en un solo planner.** Las tareas se las queda el primero
+que las recoge: si está conectado a la vez en la app instalada y en
+`npm run dev`, algunas acabarían en la base de datos de desarrollo. Para
+probar en desarrollo, desconéctalo en el otro (botón *Desconectar* en Ajustes).
+
+El token es como una contraseña: no lo subas a git ni compartas el atajo por
+enlace de iCloud con el token dentro. Si se filtra, genera otro, ejecuta
+`npm run secret` en `inbox-worker/` y cámbialo en Ajustes y en el atajo.
+
 ## Adaptar a tu propio caso
 
 El proyecto no asume ninguna ruta ni cuenta personal: las tres secciones
@@ -217,6 +263,8 @@ colores y campos se pueden renombrar libremente en `prisma/schema.prisma` y
       Gmail (lectura); credenciales gestionadas desde `/ajustes`;
       soporta 2 cuentas de Google (Personal + ARUS)
 - [x] Fase 2.5: Outlook (correo, vía Microsoft Graph)
+- [x] Tareas desde el móvil (atajo de iOS + buzón en Cloudflare) e historial
+      de tareas hechas
 - [ ] Fase 3: indexador de carpetas locales (`WATCHED_FOLDERS`)
 - [x] Fase 4: empaquetar como app de escritorio (`.exe`), ver más abajo
 
