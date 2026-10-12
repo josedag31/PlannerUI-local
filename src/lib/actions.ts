@@ -4,10 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { Priority, Section, GoogleAccountLabel } from "@/generated/prisma/client";
 import type { WidgetLayoutItem } from "@/lib/dashboardWidgets";
-import { isGoogleConnected } from "@/lib/google";
-import { createCalendarEvent, deleteCalendarEvent } from "@/lib/googleData";
-import { isMicrosoftConnected } from "@/lib/microsoft";
-import { createOutlookCalendarEvent, deleteOutlookCalendarEvent } from "@/lib/microsoftData";
+import { syncToSectionCalendar, deleteSectionCalendarEvent } from "@/lib/sectionCalendar";
+import { insertTask } from "@/lib/tasks";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -23,46 +21,6 @@ function combineDateAndTime(dateRaw: string, timeRaw: string): { date: Date; has
   return { date, hasTime };
 }
 
-/**
- * Pushes an item to whichever calendar belongs to its section: ARUS → Google
- * (cuenta ARUS), Estudios/Personal → Google (cuenta Personal) — salvo que
- * Outlook esté conectado, en cuyo caso Estudios usa Outlook (aparcado por
- * defecto: la Uni del usuario solo permite registrar la app de Microsoft
- * desde una cuenta personal, así que de momento no está conectado).
- * Best-effort: never throws, returns nulls if that section's account isn't
- * connected or the call fails.
- */
-async function syncToSectionCalendar(
-  section: Section,
-  item: { title: string; start: Date; hasTime: boolean; notes?: string | null; durationMinutes?: number | null }
-): Promise<{ googleEventId: string | null; outlookEventId: string | null }> {
-  if (section === "ARUS") {
-    if (await isGoogleConnected("ARUS")) {
-      return { googleEventId: await createCalendarEvent(item, "ARUS"), outlookEventId: null };
-    }
-  } else if (section === "STUDY" && (await isMicrosoftConnected())) {
-    return { googleEventId: null, outlookEventId: await createOutlookCalendarEvent(item) };
-  } else {
-    if (await isGoogleConnected("PERSONAL")) {
-      return { googleEventId: await createCalendarEvent(item, "PERSONAL"), outlookEventId: null };
-    }
-  }
-  return { googleEventId: null, outlookEventId: null };
-}
-
-async function deleteSectionCalendarEvent(
-  section: Section,
-  googleEventId: string | null,
-  outlookEventId: string | null
-) {
-  if (googleEventId) {
-    await deleteCalendarEvent(googleEventId, section === "ARUS" ? "ARUS" : "PERSONAL");
-  }
-  if (outlookEventId) {
-    await deleteOutlookCalendarEvent(outlookEventId);
-  }
-}
-
 // ---------- Tasks ----------
 
 export async function createTask(formData: FormData) {
@@ -74,28 +32,12 @@ export async function createTask(formData: FormData) {
   const priority = (String(formData.get("priority") ?? "MEDIUM")) as Priority;
   const subjectId = String(formData.get("subjectId") ?? "") || null;
 
-  const combined = combineDateAndTime(dueDateRaw, dueTimeRaw);
-
-  let googleEventId: string | null = null;
-  let outlookEventId: string | null = null;
-  if (combined) {
-    ({ googleEventId, outlookEventId } = await syncToSectionCalendar(section, {
-      title,
-      start: combined.date,
-      hasTime: combined.hasTime,
-    }));
-  }
-
-  await prisma.task.create({
-    data: {
-      title,
-      section,
-      priority,
-      dueDate: combined?.date ?? null,
-      subjectId,
-      googleEventId,
-      outlookEventId,
-    },
+  await insertTask({
+    title,
+    section,
+    priority,
+    due: combineDateAndTime(dueDateRaw, dueTimeRaw),
+    subjectId,
   });
   revalidatePath("/");
   revalidatePath("/estudios");
@@ -118,6 +60,7 @@ export async function toggleTask(id: string, done: boolean) {
   revalidatePath("/estudios");
   revalidatePath("/arus");
   revalidatePath("/personal");
+  revalidatePath("/hechas");
 }
 
 export async function deleteTask(id: string) {
@@ -434,4 +377,29 @@ export async function updateDashboardLayout(layout: WidgetLayoutItem[]) {
     create: { id: 1, order: JSON.stringify(layout) },
   });
   revalidatePath("/");
+}
+
+// ---------- Buzón del móvil ----------
+
+/** Guarda la URL y el token del buzón. El token no se devuelve nunca al
+ * formulario: si se deja vacío al volver a guardar, se conserva el anterior. */
+export async function updateMobileInboxConfig(formData: FormData) {
+  const url = String(formData.get("url") ?? "").trim().replace(/\/+$/, "");
+  const token = String(formData.get("token") ?? "").trim();
+  if (!/^https?:\/\/\S+$/.test(url)) return;
+
+  const actual = await prisma.mobileInboxConfig.findUnique({ where: { id: 1 } });
+  if (!token && !actual) return;
+
+  await prisma.mobileInboxConfig.upsert({
+    where: { id: 1 },
+    update: { url, ...(token ? { token } : {}), lastError: null },
+    create: { id: 1, url, token },
+  });
+  revalidatePath("/ajustes");
+}
+
+export async function clearMobileInboxConfig() {
+  await prisma.mobileInboxConfig.deleteMany({});
+  revalidatePath("/ajustes");
 }

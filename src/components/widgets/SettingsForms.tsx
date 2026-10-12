@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   updateAppSettings,
   updateSectionConfig,
   updateGoogleOAuthConfig,
   updateMicrosoftOAuthConfig,
   updateDashboardAccounts,
+  updateMobileInboxConfig,
+  clearMobileInboxConfig,
 } from "@/lib/actions";
+import { syncInbox } from "@/lib/inboxActions";
 import DriveFolderPicker from "@/components/widgets/DriveFolderPicker";
 
 export function AppSettingsForm({
@@ -371,5 +375,134 @@ export function DashboardAccountsForm({
         {saved ? "Guardado ✓" : "Guardar"}
       </button>
     </form>
+  );
+}
+
+export function MobileInboxForm({
+  url,
+  configured,
+  lastSyncAt,
+  lastError,
+}: {
+  url: string;
+  configured: boolean;
+  lastSyncAt: Date | null;
+  lastError: string | null;
+}) {
+  const [saved, setSaved] = useState(false);
+  const [prueba, setPrueba] = useState<string | null>(null);
+  const [probando, setProbando] = useState(false);
+  const router = useRouter();
+
+  const recogerAhora = async () => {
+    setProbando(true);
+    setPrueba(null);
+    try {
+      const r = await syncInbox();
+      setPrueba(
+        r.status === "ok"
+          ? r.imported === 0
+            ? "✓ Conectado. No había tareas pendientes."
+            : `✓ Conectado. ${r.imported} ${r.imported === 1 ? "tarea recogida" : "tareas recogidas"}.`
+          : r.status === "off"
+            ? "Guarda primero la URL y el token."
+            : `✕ ${r.error}`
+      );
+    } finally {
+      setProbando(false);
+      // Trae la línea de estado (última recogida / error) recién guardada.
+      router.refresh();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {configured && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-2 border border-border rounded-lg p-3">
+          <div className="text-sm">
+            <span className="font-medium">Buzón</span>
+            {lastError ? (
+              <div className="text-xs text-danger mt-0.5">▲ {lastError}</div>
+            ) : lastSyncAt ? (
+              <div className="text-xs text-accent mt-0.5">
+                ● Última recogida:{" "}
+                {new Date(lastSyncAt).toLocaleString("es-ES", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-muted mt-0.5">Aún no se ha recogido nada</div>
+            )}
+            {prueba && <div className="text-xs text-foreground/80 mt-1">{prueba}</div>}
+          </div>
+          <button
+            type="button"
+            onClick={recogerAhora}
+            disabled={probando}
+            className="text-xs font-semibold rounded-lg px-3 py-2 bg-accent text-background hover:brightness-110 disabled:opacity-60 shrink-0"
+          >
+            {probando ? "Recogiendo…" : "Recoger ahora"}
+          </button>
+        </div>
+      )}
+
+      <form
+        action={async (formData) => {
+          await updateMobileInboxConfig(formData);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        }}
+        className="space-y-3"
+      >
+        <div>
+          <label className="block text-xs text-muted mb-1">URL del buzón</label>
+          <input
+            name="url"
+            type="url"
+            defaultValue={url}
+            required
+            placeholder="https://planner-inbox.<tu-subdominio>.workers.dev"
+            className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-muted mb-1">Token</label>
+          <input
+            name="token"
+            type="password"
+            required={!configured}
+            autoComplete="off"
+            placeholder={configured ? "•••••••• (déjalo vacío para mantener el actual)" : "El mismo que guardaste en Cloudflare"}
+            className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-accent font-mono"
+          />
+          <p className="text-[11px] text-muted mt-1">
+            No se vuelve a mostrar una vez guardado. Es el mismo que lleva el atajo del iPhone.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            className="bg-accent text-background text-sm font-semibold rounded-lg px-4 py-2 hover:brightness-110"
+          >
+            {saved ? "Guardado ✓" : "Guardar"}
+          </button>
+          {configured && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm("¿Desconectar el buzón? Las tareas que queden en él se quedarán allí hasta que lo vuelvas a conectar.")) return;
+                await clearMobileInboxConfig();
+              }}
+              className="text-xs font-semibold text-danger hover:brightness-110 border border-border rounded-lg px-3 py-2"
+            >
+              Desconectar
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }
