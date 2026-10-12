@@ -29,6 +29,11 @@ const json = (data: unknown, status = 200) =>
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 
+/** Error con `mensaje` además de `error`: el atajo enseña `mensaje` en la
+ * notificación, así que un fallo se ve como fallo en vez de salir vacía. */
+const fallo = (error: string, status: number) =>
+  json({ ok: false, error, mensaje: `✕ No se ha añadido: ${error}` }, status);
+
 async function autorizado(req: Request, env: Env): Promise<boolean> {
   if (!env.INBOX_TOKEN) return false;
   const cabecera = req.headers.get("authorization") ?? "";
@@ -50,15 +55,15 @@ async function crearTarea(req: Request, env: Env): Promise<Response> {
   try {
     body = await req.json();
   } catch {
-    return json({ ok: false, error: "El cuerpo tiene que ser JSON." }, 400);
+    return fallo("El cuerpo tiene que ser JSON.", 400);
   }
 
   const titulo = typeof body.title === "string" ? body.title.trim() : "";
-  if (!titulo) return json({ ok: false, error: "Falta el título de la tarea." }, 400);
+  if (!titulo) return fallo("Falta el título de la tarea.", 400);
 
   const { n } = (await env.DB.prepare("SELECT COUNT(*) AS n FROM pending").first<{ n: number }>()) ?? { n: 0 };
   if (n >= MAX_PENDIENTES) {
-    return json({ ok: false, error: "El buzón está lleno: abre el planner para vaciarlo." }, 429);
+    return fallo("El buzón está lleno: abre el planner para vaciarlo.", 429);
   }
 
   const payload = {
@@ -89,10 +94,10 @@ async function confirmar(req: Request, env: Env): Promise<Response> {
   try {
     ({ ids } = await req.json<{ ids: unknown }>());
   } catch {
-    return json({ ok: false, error: "El cuerpo tiene que ser JSON." }, 400);
+    return fallo("El cuerpo tiene que ser JSON.", 400);
   }
   if (!Array.isArray(ids) || !ids.every((x) => typeof x === "string") || ids.length > 200) {
-    return json({ ok: false, error: "ids tiene que ser una lista de textos (máx. 200)." }, 400);
+    return fallo("ids tiene que ser una lista de textos (máx. 200).", 400);
   }
   if (ids.length === 0) return json({ ok: true, deleted: 0 });
 
@@ -108,12 +113,12 @@ export default {
     // Sin token: solo para comprobar que el despliegue responde.
     if (pathname === "/" || pathname === "/health") return json({ ok: true, servicio: "planner-inbox" });
 
-    if (!(await autorizado(req, env))) return json({ ok: false, error: "Token incorrecto." }, 401);
+    if (!(await autorizado(req, env))) return fallo("Token incorrecto.", 401);
 
     if (pathname === "/tasks" && req.method === "POST") return crearTarea(req, env);
     if (pathname === "/tasks" && req.method === "GET") return listarPendientes(env);
     if (pathname === "/tasks/ack" && req.method === "POST") return confirmar(req, env);
 
-    return json({ ok: false, error: "No existe." }, 404);
+    return fallo("No existe.", 404);
   },
 } satisfies ExportedHandler<Env>;
