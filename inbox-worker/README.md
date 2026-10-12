@@ -59,24 +59,30 @@ antivirus que inspeccionan el HTTPS (Avast, etc.).
 
 ## El atajo del iPhone
 
-App **Atajos** → **+** → nombre **Nueva tarea**. Acciones, en orden:
+App **Atajos** → **+** → nombre **Nueva tarea**. Busca cada acción por su nombre
+en el buscador de acciones. Acciones, en orden:
 
-1. **Pedir entrada**: tipo *Texto*, pregunta *¿Qué hay que hacer?*
-2. **Lista**: los nombres de tus secciones (los de Ajustes, p. ej. *Estudios*, *ARUS*, *Personal*).
-   **Elegir de la lista**: pregunta *Sección*.
-3. **Lista**: *Alta*, *Media*, *Baja*. **Elegir de la lista**: pregunta *Prioridad*.
-4. **Lista**: *Sin fecha*, *Hoy*, *Mañana*, *Elegir fecha*. **Elegir de la lista**: pregunta *¿Para cuándo?*
-5. **Si** el elemento elegido *es* *Elegir fecha*:
-   - **Pedir entrada**: tipo *Fecha y hora*.
-   - **Formatear fecha**: formato *ISO 8601* (con hora).
+1. **Solicitar entrada**: tipo *Texto*, pregunta *¿Qué hay que hacer?*
+   → **Definir variable** `Titulo`.
+2. **Lista**: los nombres de tus secciones, tal cual están en Ajustes (p. ej.
+   *Estudios*, *ARUS*, *Personal*) → **Elegir de la lista** (pregunta *Sección*)
+   → **Definir variable** `Seccion`.
+3. **Lista**: *Alta*, *Media*, *Baja* → **Elegir de la lista** (pregunta
+   *Prioridad*) → **Definir variable** `Prioridad`.
+4. **Lista**: *Sin fecha*, *Hoy*, *Mañana*, *Elegir fecha* → **Elegir de la
+   lista** (pregunta *¿Para cuándo?*) → **Definir variable** `Fecha`.
+5. **Si** `Fecha` *es* *Elegir fecha*:
+   - **Solicitar entrada**: tipo *Fecha y hora*.
+   - **Formatear fecha**: formato *ISO 8601*, con hora.
    - **Definir variable** `Fecha` con la fecha formateada.
 
-   **De lo contrario**: **Definir variable** `Fecha` con el elemento elegido.
-6. **Obtener contenido de URL**: `https://<tu-buzón>/tasks`
+   (El **De lo contrario** se deja vacío: `Fecha` ya vale *Hoy*, *Mañana* o *Sin fecha*.)
+6. **Obtener contenido de URL**: `https://<tu-buzón>/tasks`. Pulsa la flecha para ver más opciones:
    - Método **POST**.
-   - Cabecera `Authorization` → `Bearer <tu token>`.
-   - Cuerpo **JSON**: `title` (entrada del paso 1), `section` (paso 2), `priority` (paso 3), `due` (variable `Fecha`).
-7. **Obtener valor del diccionario**: clave `mensaje` → **Mostrar notificación**.
+   - Cabeceras: `Authorization` → `Bearer <tu token>` (con un espacio después de *Bearer*).
+   - Cuerpo de la solicitud **JSON**, cuatro campos de tipo *Texto*:
+     `title` = `Titulo`, `section` = `Seccion`, `priority` = `Prioridad`, `due` = `Fecha`.
+7. **Obtener valor del diccionario**: clave `mensaje` → **Mostrar notificación** con ese valor.
 
 Después: **Centro de Control** → mantener pulsado → **Añadir un control** →
 **Atajos** → *Nueva tarea*. También funciona con *"Oye Siri, nueva tarea"* y
