@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import type { Section } from "@/generated/prisma/client";
 import { toggleTask } from "@/lib/actions";
+import { completadaATiempo } from "@/lib/dueDate";
 
 type CompletedTask = {
   id: string;
@@ -28,19 +29,6 @@ function inicioDia(d: Date) {
 function inicioSemana(d: Date) {
   const r = inicioDia(d);
   r.setDate(r.getDate() - ((r.getDay() + 6) % 7)); // lunes
-  return r;
-}
-
-function tieneHora(d: Date) {
-  return d.getHours() !== 0 || d.getMinutes() !== 0;
-}
-
-/** Una fecha límite sin hora (medianoche) cuenta como "durante ese día": si se
- * completa a las 18:00 del mismo día, va a tiempo. */
-function limiteEfectivo(due: Date) {
-  if (tieneHora(due)) return due;
-  const r = new Date(due);
-  r.setHours(23, 59, 59, 999);
   return r;
 }
 
@@ -72,8 +60,7 @@ function textoReaccion(t: CompletedTask) {
 
 function plazo(t: CompletedTask): { texto: string; aTiempo: boolean } | null {
   if (!t.dueDate || !t.doneAt) return null;
-  const limite = limiteEfectivo(t.dueDate);
-  if (t.doneAt <= limite) return { texto: "a tiempo", aTiempo: true };
+  if (completadaATiempo(t.doneAt, t.dueDate)) return { texto: "a tiempo", aTiempo: true };
   const dias = Math.max(1, Math.round((inicioDia(t.doneAt).getTime() - inicioDia(t.dueDate).getTime()) / DIA_MS));
   return { texto: dias === 1 ? "1 día tarde" : `${dias} días tarde`, aTiempo: false };
 }

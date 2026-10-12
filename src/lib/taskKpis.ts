@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { completadaATiempo } from "@/lib/dueDate";
 
 function inicioSemana(d: Date) {
   const r = new Date(d);
@@ -46,7 +47,7 @@ export async function getTaskKpis(): Promise<TaskKpis> {
   const porcentajeATiempo =
     conPlazo.length === 0
       ? null
-      : Math.round((conPlazo.filter((t) => t.doneAt! <= t.dueDate!).length / conPlazo.length) * 100);
+      : Math.round((conPlazo.filter((t) => completadaATiempo(t.doneAt!, t.dueDate!)).length / conPlazo.length) * 100);
 
   const diasReaccion =
     completadas.length === 0
