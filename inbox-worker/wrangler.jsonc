@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "planner-inbox",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "planner-inbox",
+      // Se rellena con el id que devuelve `npx wrangler d1 create planner-inbox`.
+      // En local (`npm run dev`) no hace falta: wrangler simula la base.
+      "database_id": "f890c846-66de-44d4-b829-5963341614a7"
+    }
+  ]
+}
