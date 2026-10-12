@@ -217,10 +217,10 @@ export default async function AjustesPage({
           />
         </Card>
 
-        <Card title="Tareas desde el móvil" className="lg:col-span-2">
+        <Card title="Desde el móvil" className="lg:col-span-2">
           <p className="text-xs text-muted mb-3">
-            Un atajo del iPhone deja las tareas en un buzón en la nube (tu propio Cloudflare Worker, carpeta
-            <code className="font-mono"> inbox-worker/</code>) y la app las recoge al abrirse y cada minuto mientras
+            Los atajos del iPhone dejan tareas y eventos en un buzón en la nube (tu propio Cloudflare Worker, carpeta
+            <code className="font-mono"> inbox-worker/</code>) y la app los recoge al abrirse y cada minuto mientras
             está abierta, así que funciona aunque el portátil esté apagado. Pasos en el README del buzón.
           </p>
           <MobileInboxForm

@@ -6,6 +6,7 @@ import type { Priority, Section, GoogleAccountLabel } from "@/generated/prisma/c
 import type { WidgetLayoutItem } from "@/lib/dashboardWidgets";
 import { syncToSectionCalendar, deleteSectionCalendarEvent } from "@/lib/sectionCalendar";
 import { insertTask } from "@/lib/tasks";
+import { insertEvent } from "@/lib/events";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -224,16 +225,7 @@ export async function createEvent(formData: FormData) {
     }
   }
 
-  const { googleEventId, outlookEventId } = await syncToSectionCalendar(section, {
-    title,
-    start: combined.date,
-    hasTime: combined.hasTime,
-    durationMinutes,
-  });
-
-  await prisma.eventCountdown.create({
-    data: { title, date: combined.date, section, durationMinutes, googleEventId, outlookEventId },
-  });
+  await insertEvent({ title, section, start: combined, durationMinutes });
   revalidatePath("/");
   revalidatePath("/estudios");
   revalidatePath("/arus");

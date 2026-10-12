@@ -402,8 +402,13 @@ export function MobileInboxForm({
       setPrueba(
         r.status === "ok"
           ? r.imported === 0
-            ? "✓ Conectado. No había tareas pendientes."
-            : `✓ Conectado. ${r.imported} ${r.imported === 1 ? "tarea recogida" : "tareas recogidas"}.`
+            ? "✓ Conectado. No había nada pendiente."
+            : `✓ Conectado. Recogido: ${[
+                r.tasks > 0 && `${r.tasks} ${r.tasks === 1 ? "tarea" : "tareas"}`,
+                r.events > 0 && `${r.events} ${r.events === 1 ? "evento" : "eventos"}`,
+              ]
+                .filter(Boolean)
+                .join(" y ")}.`
           : r.status === "off"
             ? "Guarda primero la URL y el token."
             : `✕ ${r.error}`
