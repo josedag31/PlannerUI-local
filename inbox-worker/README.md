@@ -112,7 +112,9 @@ estas, en orden:
    *Personal*) → **Elegir de la lista** (pregunta *Sección*) → **Definir variable** `Seccion`.
 3. **Lista**: *Con hora*, *Todo el día* → **Elegir de la lista** (pregunta
    *¿Cómo es?*) → **Definir variable** `Tipo`.
-4. **Si** `Tipo` *es* *Con hora*:
+4. **Si** `Tipo` **contiene** *hora* (mejor que *es* *Con hora*: el teclado del
+   iPhone suele añadir un espacio invisible al final al aceptar una sugerencia,
+   y entonces *es* no coincide y el atajo se salta la hora sin avisar):
    - **Solicitar entrada**: tipo *Fecha y hora*, pregunta *¿Cuándo empieza?*
    - **Formatear fecha**: formato *ISO 8601*, **con** hora → **Definir variable** `Inicio`.
    - **Lista**: *Sin duración*, *30 min*, *1 h*, *1 h 30*, *2 h*, *3 h* →
